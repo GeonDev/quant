@@ -8,4 +8,10 @@ public class ApplicationConstants {
 
     public static final int PAGE_SIZE = 1000;
 
+    public static final String KRX_STOCK_LIST_URL = "https://apis.data.go.kr/1160100/service/GetKrxListedInfoService/getItemInfo";
+
+    public static final String KRX_STOCK_FINANCE_URL = "http://apis.data.go.kr/1160100/service/GetFinaStatInfoService";
+
+    public static final String KRX_STOCK_VALUE_URL = "https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService";
+
 }
