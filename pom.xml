@@ -5,7 +5,7 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>stock-service</module>
-		<module>stock-api</module>
+		<module>quant-api</module>
 	</modules>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
