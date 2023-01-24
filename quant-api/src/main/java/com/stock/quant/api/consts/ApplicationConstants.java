@@ -9,10 +9,17 @@ public class ApplicationConstants {
     public static final int PAGE_SIZE = 1000;
 
     public static final String API_GO_URL = "apis.data.go.kr";
+
+    public static final String DART_API_URL = "opendart.fss.or.kr";
+
     public static final String KRX_STOCK_LIST_URI = "1160100/service/GetKrxListedInfoService/getItemInfo";
 
     public static final String KRX_STOCK_FINANCE_URI = "1160100/service/GetFinaStatInfoService";
 
     public static final String KRX_STOCK_VALUE_URI = "1160100/service/GetStockSecuritiesInfoService";
+
+    public static final String DART_STOCK_FINANCE_URI = "api/fnlttSinglAcnt.json";
+
+
 
 }
