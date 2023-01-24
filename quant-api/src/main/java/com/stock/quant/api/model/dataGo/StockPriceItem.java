@@ -1,4 +1,4 @@
-package com.stock.quant.api.model.data;
+package com.stock.quant.api.model.dataGo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -11,7 +11,7 @@ public class StockPriceItem {
     String itemNm;
 
     @Schema(description = "주식의 시장 구분", allowableValues = {"KOSPI", "KOSDAQ", "KONEX"})
-    String mrkCtg;
+    String mrktCtg;
 
     @Schema(description = "정규시장의 매매시간종료시까지 형성되는 최종가격")
     String clpr;

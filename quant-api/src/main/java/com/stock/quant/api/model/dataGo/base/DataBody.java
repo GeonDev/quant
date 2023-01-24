@@ -1,4 +1,4 @@
-package com.stock.quant.api.model.data;
+package com.stock.quant.api.model.dataGo.base;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -7,7 +7,7 @@ import java.util.List;
 
 @Data
 @Schema(description = "증권 정보 API 바디")
-public class StockPriceBody {
+public class DataBody<T> {
 
     @Schema(description = "한 페이지의 결과 수")
     String numOfRows;
@@ -18,5 +18,5 @@ public class StockPriceBody {
     @Schema(description = "전체 데이터의 총 수")
     String totalCount;
 
-    List<StockPriceItem> items;
+    List<T> items;
 }
