@@ -6,7 +6,6 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-@Schema(description = "증권 정보 API 바디")
 public class DataBody<T> {
 
     @Schema(description = "한 페이지의 결과 수")
