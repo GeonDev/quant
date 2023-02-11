@@ -4,8 +4,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
-@Schema(description = "날짜 정보 아이템 처")
-public class DateItem {
+@Schema(description = "날짜 정보 아이템 처리")
+public class StockDateItem {
 
     @Schema(description = "종류")
     String dateKind;
