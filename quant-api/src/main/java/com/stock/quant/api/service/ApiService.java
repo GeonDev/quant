@@ -1,9 +1,14 @@
 package com.stock.quant.api.service;
 
 import com.stock.quant.api.consts.ApplicationConstants;
+import com.stock.quant.api.model.dataGo.StockDateItem;
+import com.stock.quant.api.model.dataGo.base.DataResponse;
+import com.stock.quant.service.Util.DateUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -37,8 +42,24 @@ public class ApiService {
 
         RestTemplate restTemplate = new RestTemplate();
 
+        DataResponse<StockDateItem> response = restTemplate.exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<DataResponse<StockDateItem>>(){}).getBody();
+
+        boolean isDayOff = false;
+
+        for(StockDateItem item : response.getBody().getItems()){
+            if(DateUtils.toStringLocalDate(item.getLocdate()).isEqual(date)){
+                isDayOff = true;
+                break;
+            }
+        }
+
+        if(!isDayOff){
 
 
+
+
+
+        }
 
 
     }
