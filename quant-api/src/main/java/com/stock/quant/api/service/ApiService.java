@@ -17,6 +17,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,7 +63,8 @@ public class ApiService {
 
 
         if(!isDayOff){
-            String basDt = DateUtils.getStringNowDateFormat("yyyyMMdd");
+            //공공정보 API는 3일전 데이터가 최신
+            String basDt = DateUtils.getStringDateFormat(LocalDateTime.now().minusDays(3),"yyyyMMdd");
 
             List<StockPriceItem> kospiPriceList = new ArrayList<>();
             getStockPrice(kospiPriceList, "KOSPI", basDt,1, 0);
