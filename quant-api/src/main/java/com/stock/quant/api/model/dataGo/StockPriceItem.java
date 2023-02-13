@@ -2,8 +2,10 @@ package com.stock.quant.api.model.dataGo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import lombok.ToString;
 
 @Data
+@ToString
 @Schema(description = "증권 정보 API 아이템")
 public class StockPriceItem {
 

@@ -17,5 +17,5 @@ public class DataBody<T> {
     @Schema(description = "전체 데이터의 총 수")
     String totalCount;
 
-    List<T> items;
+    DataItem<T> items;
 }
