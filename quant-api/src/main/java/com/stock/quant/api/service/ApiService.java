@@ -1,19 +1,29 @@
 package com.stock.quant.api.service;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stock.quant.api.consts.ApplicationConstants;
 import com.stock.quant.api.model.dataGo.StockDateItem;
 import com.stock.quant.api.model.dataGo.StockPriceItem;
 import com.stock.quant.api.model.dataGo.base.DataResponse;
 import com.stock.quant.service.Util.DateUtils;
 import lombok.RequiredArgsConstructor;
+
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.juli.logging.LogFactory;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.time.LocalDate;
@@ -29,8 +39,7 @@ public class ApiService {
     @Value("${signkey.data-go}")
     String apiKey;
 
-
-    public void getKrxDailyInfo(){
+    public void getKrxDailyInfo() {
         LocalDate date = LocalDate.now();
 
         URI uri = UriComponentsBuilder
@@ -45,37 +54,59 @@ public class ApiService {
                 .toUri();
 
         RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<String> result = restTemplate.getForEntity(uri,String.class);
 
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+
+        System.out.println(result.getBody());
+
+        //BoardBanUserInfo temp = mapper.readValue(result.getBody(), BoardBanUserInfo.class);
+
+        try {
+            DataResponse<StockDateItem> response = mapper.readValue(result.getBody(), DataResponse.class);
+            boolean isDayOff = false;
+            for(StockDateItem item : response.getBody().getItems().getItem()){
+                if(DateUtils.toStringLocalDate(item.getLocdate()).isEqual(date)){
+                    isDayOff = true;
+                    break;
+                }
+            }
+
+            if(!isDayOff){
+                //공공정보 API는 3일전 데이터가 최신
+                String basDt = DateUtils.getStringDateFormat(LocalDateTime.now().minusDays(3),"yyyyMMdd");
+
+                List<StockPriceItem> kospiPriceList = new ArrayList<>();
+                //getStockPrice(kospiPriceList, StockType.KOSPI.name(), basDt,1, 0);
+
+                List<StockPriceItem> kodaqPriceList = new ArrayList<>();
+                //getStockPrice(kodaqPriceList, StockType.KOSDAQ.name(), basDt,1, 0);
+            }
+
+        } catch (JsonMappingException e) {
+            e.printStackTrace();
+        } catch (JsonParseException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        /**
         DataResponse<StockDateItem> response = restTemplate.exchange(uri,
                 HttpMethod.GET,
                 null,
                 new ParameterizedTypeReference<DataResponse<StockDateItem>>(){})
                 .getBody();
 
-        boolean isDayOff = false;
 
-        for(StockDateItem item : response.getBody().getItems().getItem()){
-            if(DateUtils.toStringLocalDate(item.getLocdate()).isEqual(date)){
-                isDayOff = true;
-                break;
-            }
-        }
+        **/
 
 
-        if(!isDayOff){
-            //공공정보 API는 3일전 데이터가 최신
-            String basDt = DateUtils.getStringDateFormat(LocalDateTime.now().minusDays(3),"yyyyMMdd");
-
-            List<StockPriceItem> kospiPriceList = new ArrayList<>();
-            getStockPrice(kospiPriceList, "KOSPI", basDt,1, 0);
-
-            List<StockPriceItem> kodaqPriceList = new ArrayList<>();
-            getStockPrice(kodaqPriceList, "KOSDAQ", basDt,1, 0);
-        }
     }
 
 
-    public void getStockPrice(List<StockPriceItem> stockPriceList, String marketType, String basDt, int pageNum, int totalCount){
+    private void getStockPrice(List<StockPriceItem> stockPriceList, String marketType, String basDt, int pageNum, int totalCount){
 
         if(totalCount != 0 && totalCount == stockPriceList.size()){
             return;

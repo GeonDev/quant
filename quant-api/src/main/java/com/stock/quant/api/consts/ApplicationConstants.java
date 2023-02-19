@@ -8,9 +8,9 @@ public class ApplicationConstants {
 
     public static final int PAGE_SIZE = 1000;
 
-    public static final String API_GO_URL = "apis.data.go.kr";
+    public static final String API_GO_URL = "http://apis.data.go.kr";
 
-    public static final String DART_API_URL = "opendart.fss.or.kr";
+    public static final String DART_API_URL = "https://opendart.fss.or.kr";
 
     public static final String REQUEST_MSG = "NORMAL SERVICE.";
 
