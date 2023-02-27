@@ -39,7 +39,7 @@ public class DateUtils {
     public static String toLocalDateString(LocalDate date){
         String formatDate = "";
         if(date != null){
-            formatDate = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            formatDate = date.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         }
         return formatDate;
     }

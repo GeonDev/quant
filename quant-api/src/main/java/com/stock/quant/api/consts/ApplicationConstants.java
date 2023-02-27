@@ -20,7 +20,7 @@ public class ApplicationConstants {
 
     public static final String KRX_STOCK_FINANCE_URI = "/1160100/service/GetFinaStatInfoService";
 
-    public static final String KRX_STOCK_VALUE_URI = "/1160100/service/GetStockSecuritiesInfoService";
+    public static final String KRX_STOCK_VALUE_URI = "/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo";
 
     public static final String DART_STOCK_FINANCE_URI = "/api/fnlttSinglAcnt.json";
 

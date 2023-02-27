@@ -6,7 +6,6 @@ import com.stock.quant.api.consts.ApplicationConstants;
 import com.stock.quant.api.model.dataGo.StockDateItem;
 import com.stock.quant.api.model.dataGo.StockPriceItem;
 import com.stock.quant.api.model.dataGo.base.ApiResponse;
-import com.stock.quant.api.model.dataGo.base.DataResponse;
 import com.stock.quant.api.model.enums.StockType;
 import com.stock.quant.service.Util.DateUtils;
 import lombok.RequiredArgsConstructor;
@@ -39,9 +38,9 @@ public class ApiService {
 
         //공공정보 API는 1일전 데이터가 최신, 전일 데이터는 오후 1시에 갱신, 월요일에 금요일 데이터 갱신
         if(targetDate.getDayOfWeek().getValue() == 1){
-            targetDate.minusDays(3);
+            targetDate = targetDate.minusDays(3);
         }else {
-            targetDate.minusDays(1);
+            targetDate = targetDate.minusDays(1);
         }
 
         try {
@@ -82,9 +81,8 @@ public class ApiService {
                 getStockPrice(kospiPriceList, StockType.KOSPI.name(), DateUtils.toLocalDateString(targetDate),1, 0);
 
                 List<StockPriceItem> kodaqPriceList = new ArrayList<>();
-                //getStockPrice(kodaqPriceList, StockType.KOSDAQ.name(), basDt,1, 0);
+                getStockPrice(kodaqPriceList, StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate),1, 0);
             }
-
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -113,6 +111,9 @@ public class ApiService {
                     .queryParam("basDt", basDt)
                     .build();
 
+            logger.debug("Stock URL : {} ", uri.toString() );
+
+
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
             logger.debug("Stock API : {} ", result.getBody() );
@@ -126,12 +127,11 @@ public class ApiService {
 
                 if(response.getResponse().getBody().getItems() != null){
                     for (StockPriceItem item : response.getResponse().getBody().getItems().getItem()) {
-                        logger.debug("Stock item : {}", item.toString());
                         stockPriceList.add(item);
                     }
-                }
 
-                getStockPrice(stockPriceList, marketType, basDt, pageNum + 1, Integer.parseInt(response.getResponse().getBody().getTotalCount()));
+                    getStockPrice(stockPriceList, marketType, basDt, pageNum + 1, Integer.parseInt(response.getResponse().getBody().getTotalCount()));
+                }
             }
         }catch (Exception e){
             e.printStackTrace();
