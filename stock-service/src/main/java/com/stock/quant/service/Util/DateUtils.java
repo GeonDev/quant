@@ -30,11 +30,17 @@ public class DateUtils {
 
     public static String toLocalDatetimeString(LocalDateTime dateTime){
         String formatDate = "";
-
         if(dateTime != null){
             formatDate = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         }
+        return formatDate;
+    }
 
+    public static String toLocalDateString(LocalDate date){
+        String formatDate = "";
+        if(date != null){
+            formatDate = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        }
         return formatDate;
     }
 

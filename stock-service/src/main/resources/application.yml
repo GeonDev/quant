@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: 9080
   error:
     whitelabel:
       enabled: false
@@ -7,6 +7,9 @@ jasypt:
   encryptor:
     bean: jasyptStringEncryptor
 
+logging:
+  level:
+    root: info
 
 ---
 spring:
@@ -24,16 +27,21 @@ spring:
     password: ENC(IfHjdyjoBjaczvj0jbgoKQ==)
 
 signkey:
-  data-go: Qa6NXZbhyBRWdsfOjUSXTcZJOL985MbhfomZLiye%2Bk1lkE2DvP2pMrSLdmvwjTRr0%2BWOIQOLvecxJkqc%2FAXRZA%3D%3D
+  data-go: UbBresjb6IVpoH2VpdxNeuC0YB8dAr5FQqncYrbSW3XhE3igo5WKraPa5aGHAAHchpnaMbr%2F5gHrKyryz%2FoipQ%3D%3D
   dart: c207c7fb3fa4aecf7e9012257b17012b5949dff8
+
+
 
 cron:
   krx:
-    daily-info: 0 0 18 * * ?
+    daily-info: 0 0 14 * * 1-6
 
-
-
-
+logging:
+  level:
+    com:
+      stock:
+        quant:
+          api: debug
 
 ---
 spring:
@@ -51,9 +59,14 @@ spring:
       maximum-pool-size: 10
 
 signkey:
-  data-go: Qa6NXZbhyBRWdsfOjUSXTcZJOL985MbhfomZLiye%2Bk1lkE2DvP2pMrSLdmvwjTRr0%2BWOIQOLvecxJkqc%2FAXRZA%3D%3D
+  data-go: UbBresjb6IVpoH2VpdxNeuC0YB8dAr5FQqncYrbSW3XhE3igo5WKraPa5aGHAAHchpnaMbr%2F5gHrKyryz%2FoipQ%3D%3D
+  dart: c207c7fb3fa4aecf7e9012257b17012b5949dff8
 
 cron:
   krx:
-    daily-info: 0 0 18 * * ?
+    daily-info: 0 0 14 * * 1-6
+
+logging:
+  level:
+    root: info
 ---
