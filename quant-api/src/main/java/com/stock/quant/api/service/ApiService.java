@@ -1,8 +1,11 @@
 package com.stock.quant.api.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stock.quant.api.consts.ApplicationConstants;
+import com.stock.quant.api.model.dart.DartBase;
+import com.stock.quant.api.model.dart.FinanceItem;
 import com.stock.quant.api.model.dataGo.StockDateItem;
 import com.stock.quant.api.model.dataGo.StockPriceItem;
 import com.stock.quant.api.model.dataGo.base.ApiResponse;
@@ -51,6 +54,8 @@ public class ApiService {
     @Value("${file.path}")
     String filePath;
 
+
+    //주식 시장 활성일 체크 -> 활성일 일 경우 주식 시세 받기
     public void getKrxDailyInfo() {
         LocalDate targetDate = LocalDate.now();
 
@@ -108,7 +113,8 @@ public class ApiService {
     }
 
 
-    private void getStockPrice(List<StockPriceItem> stockPriceList, String marketType, String basDt, int pageNum, int totalCount) {
+    //주식 시세 받아오기
+    public void getStockPrice(List<StockPriceItem> stockPriceList, String marketType, String basDt, int pageNum, int totalCount) {
 
         if (totalCount != 0 && totalCount == stockPriceList.size()) {
             return;
@@ -151,7 +157,7 @@ public class ApiService {
         }
     }
 
-
+    //상장 회사 고유 정보 받아오기
     public void getDartCorpCodeInfo(){
         UriComponents uri = UriComponentsBuilder
                 .newInstance()
@@ -206,6 +212,45 @@ public class ApiService {
         Node node = (Node) nodes.item(0);
         return node.getTextContent().trim();
     }
+
+
+    // 살장회사 재무 정보 다운로드
+    public void getCorpFinanceInfo(String corpCode, String year, String reprtCode){
+        UriComponents uri = UriComponentsBuilder
+                .newInstance()
+                .scheme("https")
+                .host(ApplicationConstants.DART_API_URL)
+                .path(ApplicationConstants.DART_STOCK_FINANCE_URI)
+                .queryParam("crtfc_key", dartKey)
+                .queryParam("corp_code", corpCode)
+                .queryParam("bsns_year", year)
+                .queryParam("reprt_code", reprtCode)
+                .build();
+
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
+            mapper.enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES);
+            DartBase<FinanceItem> response = mapper.readValue(result.getBody(), DartBase.class);
+
+            if(response.getStatus().equals("000") ){
+                List<FinanceItem> financeList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {});
+                for(FinanceItem item : financeList){
+                    logger.debug(item.toString());
+                }
+            }
+
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+    }
+
+
 
 
 }

@@ -27,4 +27,10 @@ public class ApiController {
         return ResponseEntity.ok("");
     }
 
+    @GetMapping(value = "fin", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity getFinance( ){
+        apiService.getCorpFinanceInfo( "00565154", "2021" , "11013" );
+        return ResponseEntity.ok("");
+    }
+
 }

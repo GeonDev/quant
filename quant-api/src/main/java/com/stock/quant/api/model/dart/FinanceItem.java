@@ -11,17 +11,17 @@ public class FinanceItem {
     @Schema(description = "접수번호(14자리)")
     String rcept_no;
 
+    @Schema(description = "보고서 코드" )
+    String reprt_code;
+
     @Schema(description = "사업 연도\t2019")
     String bsns_year;
 
+    @Schema(description = "고유 번호")
+    String corp_code;
+
     @Schema(description = "종목 코드\t상장회사의 종목코드(6자리)")
     String stock_code;
-
-    @Schema(description = "보고서 코드" , allowableValues = {"11013" , "11012", "11014"  ,"11011"})
-    String reprt_code;
-
-    @Schema(description = "계정명")
-    String account_nm;
 
     @Schema(description = "개별/연결구분 CFS:연결재무제표, OFS:재무제표" )
     String fs_div;
@@ -35,6 +35,9 @@ public class FinanceItem {
     @Schema(description = "\t재무제표명\tex) 재무상태표 또는 손익계산서 출력")
     String sj_nm;
 
+    @Schema(description = "계정명 ex) 유동자산\"")
+    String account_nm;
+
     @Schema(description = "\t당기명\tex) 제 13 기 3분기말")
     String thstrm_nm;
 
@@ -44,7 +47,7 @@ public class FinanceItem {
     @Schema(description = "\t당기금액\t9,999,999,999")
     String thstrm_amount;
 
-    @Schema(description = "당기누적금액")
+    @Schema(description = "\t당기금액\t9,999,999,999")
     String thstrm_add_amount;
 
     @Schema(description = "\t전기명\tex) 제 12 기말")
@@ -56,17 +59,8 @@ public class FinanceItem {
     @Schema(description = "\t전기금액\t9,999,999,999")
     String frmtrm_amount;
 
-    @Schema(description = "\t전기누적금액\t9,999,999,999")
+    @Schema(description = "\t전기금액\t9,999,999,999")
     String frmtrm_add_amount;
-
-    @Schema(description = "\t전전기명\tex) 제 11 기말(※ 사업보고서의 경우에만 출력)")
-    String bfefrmtrm_nm;
-
-    @Schema(description = "\t전전기일자\tex) 2016.12.31 현재(※ 사업보고서의 경우에만 출력)")
-    String bfefrmtrm_dt;
-
-    @Schema(description = "\t전전기금액\t9,999,999,999(※ 사업보고서의 경우에만 출력)")
-    String bfefrmtrm_amount;
 
     @Schema(description = "\t계정과목 정렬순서\t계정과목 정렬순서")
     String ord;

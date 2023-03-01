@@ -54,8 +54,8 @@ spring:
   datasource:
     url:
     driver-class-name: org.mariadb.jdbc.Driver
-    username: dev
-    password: dev
+    username: ooooo
+    password: oooo0
     hikari:
       maximum-pool-size: 10
 
