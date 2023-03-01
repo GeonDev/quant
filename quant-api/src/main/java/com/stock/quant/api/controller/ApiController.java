@@ -20,4 +20,11 @@ public class ApiController {
         return ResponseEntity.ok("");
     }
 
+
+    @GetMapping(value = "code", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity getCorpCode( ){
+        apiService.getDartCorpCodeInfo();
+        return ResponseEntity.ok("");
+    }
+
 }

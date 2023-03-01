@@ -30,6 +30,8 @@ signkey:
   data-go: UbBresjb6IVpoH2VpdxNeuC0YB8dAr5FQqncYrbSW3XhE3igo5WKraPa5aGHAAHchpnaMbr%2F5gHrKyryz%2FoipQ%3D%3D
   dart: c207c7fb3fa4aecf7e9012257b17012b5949dff8
 
+file:
+  path: /Users/kada/data/dart/
 
 
 cron:
@@ -40,8 +42,7 @@ logging:
   level:
     com:
       stock:
-        quant:
-          api: debug
+        quant: debug
 
 ---
 spring:
@@ -61,6 +62,9 @@ spring:
 signkey:
   data-go: UbBresjb6IVpoH2VpdxNeuC0YB8dAr5FQqncYrbSW3XhE3igo5WKraPa5aGHAAHchpnaMbr%2F5gHrKyryz%2FoipQ%3D%3D
   dart: c207c7fb3fa4aecf7e9012257b17012b5949dff8
+
+file:
+  path: /Users/kada/data/dart/
 
 cron:
   krx:

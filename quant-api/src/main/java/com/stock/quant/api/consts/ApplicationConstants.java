@@ -24,6 +24,10 @@ public class ApplicationConstants {
 
     public static final String DART_STOCK_FINANCE_URI = "/api/fnlttSinglAcnt.json";
 
+    public static final String DART_CORP_CODE_URI = "/api/corpCode.xml";
+
+    public static final String CORP_CODE_FILE = "CORPCODE.xml";
+
 
 
 }

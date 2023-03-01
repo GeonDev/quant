@@ -7,22 +7,34 @@ import com.stock.quant.api.model.dataGo.StockDateItem;
 import com.stock.quant.api.model.dataGo.StockPriceItem;
 import com.stock.quant.api.model.dataGo.base.ApiResponse;
 import com.stock.quant.api.model.enums.StockType;
+import com.stock.quant.service.Util.CommonUtils;
 import com.stock.quant.service.Util.DateUtils;
 import lombok.RequiredArgsConstructor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.*;
 import java.net.URLDecoder;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +44,12 @@ public class ApiService {
 
     @Value("${signkey.data-go}")
     String apiKey;
+
+    @Value("${signkey.dart}")
+    String dartKey;
+
+    @Value("${file.path}")
+    String filePath;
 
     public void getKrxDailyInfo() {
         LocalDate targetDate = LocalDate.now();
@@ -59,7 +77,6 @@ public class ApiService {
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
 
-            logger.debug("API : {}" ,result.getBody());
 
             ObjectMapper mapper = new ObjectMapper();
             mapper.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
@@ -111,12 +128,8 @@ public class ApiService {
                     .queryParam("basDt", basDt)
                     .build();
 
-            logger.debug("Stock URL : {} ", uri.toString() );
-
-
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
-            logger.debug("Stock API : {} ", result.getBody() );
 
             if (!result.getBody().contains(ApplicationConstants.REQUEST_MSG)) {
                 ObjectMapper mapper = new ObjectMapper();
@@ -137,5 +150,62 @@ public class ApiService {
             e.printStackTrace();
         }
     }
+
+
+    public void getDartCorpCodeInfo(){
+        UriComponents uri = UriComponentsBuilder
+                .newInstance()
+                .scheme("https")
+                .host(ApplicationConstants.DART_API_URL)
+                .path(ApplicationConstants.DART_CORP_CODE_URI)
+                .queryParam("crtfc_key", dartKey)
+                .build();
+
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(Arrays.asList(MediaType.APPLICATION_OCTET_STREAM));
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        HttpEntity<String> entity = new HttpEntity<String>(headers);
+
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<byte[]> response = restTemplate.exchange(uri.toString(), HttpMethod.GET, entity, byte[].class);
+
+        try {
+            File lOutFile = new File(filePath  + "temp.zip");
+            FileOutputStream lFileOutputStream = new FileOutputStream(lOutFile);
+            lFileOutputStream.write(response.getBody());
+            lFileOutputStream.close();
+
+            CommonUtils.unZip(filePath + "temp.zip" , filePath);
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setIgnoringElementContentWhitespace(true);
+            DocumentBuilder builder = factory.newDocumentBuilder();
+
+            Document document = builder.parse( filePath + "CORPCODE.xml");
+
+            NodeList corpList = document.getElementsByTagName("list");
+
+            for(int i =0; i< corpList.getLength(); i++ ){
+                Element corp = (Element) corpList.item(i);
+               if (!StringUtils.isEmpty(getValue("stock_code" , corp))){
+                   logger.debug("corp_code : {}" ,getValue("corp_code" , corp));
+                   logger.debug("corp_name : {}" ,getValue("corp_name" , corp));
+                   logger.debug("stock_code : {}" ,getValue("stock_code" , corp));
+               }
+            }
+
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+
+    }
+
+    private static String getValue(String tag, Element element) {
+        NodeList nodes = element.getElementsByTagName(tag).item(0).getChildNodes();
+        Node node = (Node) nodes.item(0);
+        return node.getTextContent().trim();
+    }
+
 
 }
