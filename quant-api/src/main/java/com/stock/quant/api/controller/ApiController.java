@@ -14,7 +14,7 @@ public class ApiController {
 
     private final ApiService apiService;
 
-    @GetMapping(value = "test", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "daily", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getStockPrice( ){
         apiService.getKrxDailyInfo();
         return ResponseEntity.ok("");

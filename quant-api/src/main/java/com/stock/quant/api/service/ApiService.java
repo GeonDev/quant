@@ -10,8 +10,10 @@ import com.stock.quant.api.model.dataGo.StockDateItem;
 import com.stock.quant.api.model.dataGo.StockPriceItem;
 import com.stock.quant.api.model.dataGo.base.ApiResponse;
 import com.stock.quant.api.model.enums.StockType;
-import com.stock.quant.service.Util.CommonUtils;
-import com.stock.quant.service.Util.DateUtils;
+import utils.CommonUtils;
+import utils.DateUtils;
+import com.stock.quant.service.entity.CorpCode;
+import com.stock.quant.service.repository.CorpCodeRepository;
 import lombok.RequiredArgsConstructor;
 
 import org.slf4j.Logger;
@@ -19,7 +21,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -44,6 +45,9 @@ import java.util.List;
 public class ApiService {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    private final CorpCodeRepository corpCodeRepository;
+
 
     @Value("${signkey.data-go}")
     String apiKey;
@@ -192,14 +196,20 @@ public class ApiService {
 
             NodeList corpList = document.getElementsByTagName("list");
 
+            List<CorpCode> codeList = new ArrayList<>();
+
             for(int i =0; i< corpList.getLength(); i++ ){
                 Element corp = (Element) corpList.item(i);
-               if (!StringUtils.isEmpty(getValue("stock_code" , corp))){
-                   logger.debug("corp_code : {}" ,getValue("corp_code" , corp));
-                   logger.debug("corp_name : {}" ,getValue("corp_name" , corp));
-                   logger.debug("stock_code : {}" ,getValue("stock_code" , corp));
-               }
+                if(corp != null){
+                    CorpCode code = new CorpCode();
+                    code.setCorpCode(getValue("corp_code" , corp));
+                    code.setStockCode(getValue("stock_code" , corp));
+                    code.setCorpName(getValue("corp_name" , corp));
+                    codeList.add(code);
+                }
             }
+
+            corpCodeRepository.saveAll(codeList);
 
         } catch (Exception e){
             e.printStackTrace();

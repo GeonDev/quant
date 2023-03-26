@@ -1,4 +1,4 @@
-package com.stock.quant.service.config;
+package config;
 
 import org.jasypt.encryption.pbe.PooledPBEStringEncryptor;
 import org.jasypt.encryption.pbe.config.SimpleStringPBEConfig;

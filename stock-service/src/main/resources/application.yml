@@ -13,8 +13,9 @@ logging:
 
 ---
 spring:
-  profile:
-    active: local
+  config:
+    activate:
+      on-profile: local
   jpa:
     show-sql: true
     properties:
@@ -22,9 +23,14 @@ spring:
         format_sql: true
   datasource:
     driver-class-name: org.mariadb.jdbc.Driver
-    url: jdbc:mariadb://192.168.1.104:3306/stock_db
-    username: ENC(RqxpbaGRs7/Jnf5+Xh6oYA==)
-    password: ENC(XAnd/Zk8AoW/b0ynx0ovog==)
+    url: jdbc:mysql://192.168.1.104:3306/db_stock
+    username: remote
+    password: remote1234
+    hikari:
+      maximum-pool-size: 50
+    transaction:
+      default-timeout: 10
+
 
 signkey:
   data-go: UbBresjb6IVpoH2VpdxNeuC0YB8dAr5FQqncYrbSW3XhE3igo5WKraPa5aGHAAHchpnaMbr%2F5gHrKyryz%2FoipQ%3D%3D
@@ -46,16 +52,17 @@ logging:
 
 ---
 spring:
-  profile:
-    active: prod
+  config:
+    activate:
+      on-profile: prod
   jpa:
     show-sql: false
 
   datasource:
-    url:
     driver-class-name: org.mariadb.jdbc.Driver
+    url:
     username: ooooo
-    password: oooo0
+    password: ooooo
     hikari:
       maximum-pool-size: 10
 

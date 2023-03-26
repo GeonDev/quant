@@ -1,6 +1,4 @@
-package com.stock.quant.service.Util;
-
-import org.w3c.dom.Document;
+package utils;
 
 import java.io.BufferedOutputStream;
 import java.io.File;

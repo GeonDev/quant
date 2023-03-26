@@ -1,4 +1,4 @@
-package com.stock.quant.service.exception;
+package exception;
 
 import org.springframework.http.HttpStatus;
 
