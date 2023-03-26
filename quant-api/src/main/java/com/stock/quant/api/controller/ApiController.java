@@ -6,6 +6,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -15,9 +16,9 @@ public class ApiController {
     private final ApiService apiService;
 
     @GetMapping(value = "daily", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity getStockPrice( ){
-        apiService.getKrxDailyInfo();
-        return ResponseEntity.ok("");
+    public ResponseEntity getStockPrice(@RequestParam(value = "date", required = false, defaultValue = "") String date){
+        apiService.getKrxDailyInfo(date);
+        return ResponseEntity.ok("End");
     }
 
 

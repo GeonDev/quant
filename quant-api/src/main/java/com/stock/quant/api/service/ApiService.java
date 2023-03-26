@@ -6,16 +6,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stock.quant.api.consts.ApplicationConstants;
 import com.stock.quant.api.model.dart.DartBase;
 import com.stock.quant.api.model.dart.FinanceItem;
-import com.stock.quant.api.model.dataGo.StockDateItem;
-import com.stock.quant.api.model.dataGo.StockPriceItem;
-import com.stock.quant.api.model.dataGo.base.ApiResponse;
 import com.stock.quant.api.model.enums.StockType;
-import utils.CommonUtils;
-import utils.DateUtils;
 import com.stock.quant.service.entity.CorpCode;
+import com.stock.quant.service.entity.StockPrice;
 import com.stock.quant.service.repository.CorpCodeRepository;
+import com.stock.quant.service.repository.StockPriceRepository;
 import lombok.RequiredArgsConstructor;
-
+import org.apache.commons.lang3.StringUtils;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,12 +28,14 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import utils.CommonUtils;
+import utils.DateUtils;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.net.URLDecoder;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,6 +49,7 @@ public class ApiService {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final CorpCodeRepository corpCodeRepository;
+    private final StockPriceRepository stockPriceRepository;
 
 
     @Value("${signkey.data-go}")
@@ -60,13 +63,18 @@ public class ApiService {
 
 
     //주식 시장 활성일 체크 -> 활성일 일 경우 주식 시세 받기
-    public void getKrxDailyInfo() {
-        LocalDate targetDate = LocalDate.now();
+    public void getKrxDailyInfo(String date) {
+        getKrxStockPrice(date.equals("") ? LocalDate.now() : DateUtils.toStringLocalDate(date));
+    }
+
+    private void getKrxStockPrice(LocalDate targetDate) {
+
+        logger.debug("getKrxStockPrice date : {}", targetDate);
 
         //공공정보 API는 1일전 데이터가 최신, 전일 데이터는 오후 1시에 갱신, 월요일에 금요일 데이터 갱신
-        if(targetDate.getDayOfWeek().getValue() == 1){
+        if (targetDate.getDayOfWeek().getValue() == 1) {
             targetDate = targetDate.minusDays(3);
-        }else {
+        } else {
             targetDate = targetDate.minusDays(1);
         }
 
@@ -77,50 +85,61 @@ public class ApiService {
                     .host(ApplicationConstants.API_GO_URL)
                     .path(ApplicationConstants.KAI_REST_DATE_URL)
                     .queryParam("solYear", targetDate.getYear())
-                    .queryParam("solMonth", targetDate.getMonthValue())
+                    .queryParam("solMonth", targetDate.getMonthValue() < 10 ? "0" + targetDate.getMonthValue() : targetDate.getMonthValue())
                     .queryParam("_type", "json")
-                    .queryParam("ServiceKey", URLDecoder.decode(apiKey, "UTF-8") )
-                    .queryParam("numOfRows", 20)
+                    .queryParam("ServiceKey", URLDecoder.decode(apiKey, "UTF-8"))
+                    .queryParam("numOfRows", 10)
                     .build();
+
+            logger.debug("REST API {}", uri.toString());
 
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
 
+            JSONParser parser = new JSONParser();
+            JSONObject object = (JSONObject) parser.parse(result.getBody());
 
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
-            mapper.enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES);
-            ApiResponse<StockDateItem> response = mapper.readValue(result.getBody(), ApiResponse.class);
+            JSONObject response = (JSONObject) object.get("response");
+            JSONObject header = (JSONObject) response.get("header");
+            JSONObject body = (JSONObject) response.get("body");
+
 
             boolean isDayOff = false;
-            if(response.getResponse().getBody().getItems() != null ){
-                for (StockDateItem item : response.getResponse().getBody().getItems().getItem()) {
-                    if (DateUtils.toStringLocalDate(item.getLocdate()).isEqual(targetDate)) {
-                        isDayOff = true;
-                        break;
+
+            logger.debug("REST item {}", body.get("items").toString());
+            if (!body.get("items").toString().equals("")) {
+
+
+                JSONObject items = (JSONObject) body.get("items");
+                JSONArray itemList = (JSONArray) items.get("item");
+
+
+                if (object != null && header.get("resultMsg").toString().equals(ApplicationConstants.REQUEST_MSG)) {
+                    for (int i = 0; i < itemList.size(); i++) {
+                        JSONObject item = (JSONObject) itemList.get(i);
+
+                        if (DateUtils.toStringLocalDate(item.get("locdate").toString()).isEqual(targetDate)) {
+                            isDayOff = true;
+                            break;
+                        }
                     }
                 }
             }
 
             if (!isDayOff) {
-                List<StockPriceItem> kospiPriceList = new ArrayList<>();
-                getStockPrice(kospiPriceList, StockType.KOSPI.name(), DateUtils.toLocalDateString(targetDate),1, 0);
-
-                List<StockPriceItem> kodaqPriceList = new ArrayList<>();
-                getStockPrice(kodaqPriceList, StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate),1, 0);
+                getStockPrice(StockType.KOSPI.name(), DateUtils.toLocalDateString(targetDate), 1, 0, 0);
+                getStockPrice(StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate), 1, 0, 0);
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
 
     //주식 시세 받아오기
-    public void getStockPrice(List<StockPriceItem> stockPriceList, String marketType, String basDt, int pageNum, int totalCount) {
 
-        if (totalCount != 0 && totalCount == stockPriceList.size()) {
+    public void getStockPrice(String marketType, String basDt, int pageNum, int totalCount, int currentCount) {
+        if (totalCount != 0 && totalCount <= currentCount) {
             return;
         }
 
@@ -141,28 +160,56 @@ public class ApiService {
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
 
-            if (!result.getBody().contains(ApplicationConstants.REQUEST_MSG)) {
-                ObjectMapper mapper = new ObjectMapper();
-                mapper.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
-                mapper.enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES);
+            JSONParser parser = new JSONParser();
+            JSONObject object = (JSONObject) parser.parse(result.getBody());
 
-                ApiResponse<StockPriceItem> response = mapper.readValue(result.getBody(), ApiResponse.class);
+            JSONObject response = (JSONObject) object.get("response");
+            JSONObject header = (JSONObject) response.get("header");
+            JSONObject body = (JSONObject) response.get("body");
 
-                if(response.getResponse().getBody().getItems() != null){
-                    for (StockPriceItem item : response.getResponse().getBody().getItems().getItem()) {
-                        stockPriceList.add(item);
+            totalCount = Integer.parseInt(body.get("totalCount").toString());
+
+            logger.debug("getStockPrice API : {}", header.get("resultMsg").toString());
+
+            if (header.get("resultMsg").toString().equals(ApplicationConstants.REQUEST_MSG)) {
+
+                if (!body.get("items").toString().equals("")) {
+                    JSONObject items = (JSONObject) body.get("items");
+                    JSONArray itemList = (JSONArray) items.get("item");
+
+
+                    for (int i = 0; i < itemList.size(); i++) {
+                        JSONObject item = (JSONObject) itemList.get(i);
+                        StockPrice price = new StockPrice();
+
+                        price.setStockCode(item.get("srtnCd").toString());
+                        price.setMarketCode(marketType);
+                        price.setBasDt(DateUtils.toLocalDate(basDt));
+                        price.setVolume(Integer.parseInt(item.get("trqu").toString()));
+                        price.setStartPrice(Integer.parseInt(item.get("mkp").toString()));
+                        price.setEndPrice(Integer.parseInt(item.get("clpr").toString()));
+                        price.setLowPrice(Integer.parseInt(item.get("lopr").toString()));
+                        price.setHighPrice(Integer.parseInt(item.get("hipr").toString()));
+                        price.setDailyRange(Double.parseDouble(item.get("vs").toString()));
+                        price.setDailyRatio(Double.parseDouble(item.get("fltRt").toString()));
+                        price.setStockTotalCnt(Long.parseLong(item.get("lstgStCnt").toString()));
+                        price.setMarketTotalAmt(Long.parseLong(item.get("mrktTotAmt").toString()));
+
+                        stockPriceRepository.save(price);
+                        currentCount += 1;
                     }
-
-                    getStockPrice(stockPriceList, marketType, basDt, pageNum + 1, Integer.parseInt(response.getResponse().getBody().getTotalCount()));
+                    getStockPrice(marketType, basDt, pageNum + 1, totalCount, currentCount);
                 }
+
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+
     //상장 회사 고유 정보 받아오기
-    public void getDartCorpCodeInfo(){
+    public void getDartCorpCodeInfo() {
         UriComponents uri = UriComponentsBuilder
                 .newInstance()
                 .scheme("https")
@@ -181,37 +228,44 @@ public class ApiService {
         ResponseEntity<byte[]> response = restTemplate.exchange(uri.toString(), HttpMethod.GET, entity, byte[].class);
 
         try {
-            File lOutFile = new File(filePath  + "temp.zip");
+            File lOutFile = new File(filePath + "temp.zip");
             FileOutputStream lFileOutputStream = new FileOutputStream(lOutFile);
             lFileOutputStream.write(response.getBody());
             lFileOutputStream.close();
 
-            CommonUtils.unZip(filePath + "temp.zip" , filePath);
+            CommonUtils.unZip(filePath + "temp.zip", filePath);
 
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setIgnoringElementContentWhitespace(true);
             DocumentBuilder builder = factory.newDocumentBuilder();
 
-            Document document = builder.parse( filePath + "CORPCODE.xml");
+            Document document = builder.parse(filePath + "CORPCODE.xml");
 
             NodeList corpList = document.getElementsByTagName("list");
 
             List<CorpCode> codeList = new ArrayList<>();
 
-            for(int i =0; i< corpList.getLength(); i++ ){
+            for (int i = 0; i < corpList.getLength(); i++) {
                 Element corp = (Element) corpList.item(i);
-                if(corp != null){
-                    CorpCode code = new CorpCode();
-                    code.setCorpCode(getValue("corp_code" , corp));
-                    code.setStockCode(getValue("stock_code" , corp));
-                    code.setCorpName(getValue("corp_name" , corp));
-                    codeList.add(code);
+                if (corp != null) {
+
+                    //상장된 회사 코드만 저장
+                    if (getValue("stock_code", corp) != null && StringUtils.isNotEmpty(getValue("stock_code", corp))) {
+
+                        CorpCode code = new CorpCode();
+                        code.setCorpCode(getValue("corp_code", corp));
+                        code.setStockCode(getValue("stock_code", corp));
+                        code.setCorpName(getValue("corp_name", corp));
+                        code.setCorpState("Y");
+                        codeList.add(code);
+                    }
+
                 }
             }
 
             corpCodeRepository.saveAll(codeList);
 
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -225,7 +279,7 @@ public class ApiService {
 
 
     // 살장회사 재무 정보 다운로드
-    public void getCorpFinanceInfo(String corpCode, String year, String reprtCode){
+    public void getCorpFinanceInfo(String corpCode, String year, String reprtCode) {
         UriComponents uri = UriComponentsBuilder
                 .newInstance()
                 .scheme("https")
@@ -246,21 +300,20 @@ public class ApiService {
             mapper.enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES);
             DartBase<FinanceItem> response = mapper.readValue(result.getBody(), DartBase.class);
 
-            if(response.getStatus().equals("000") ){
-                List<FinanceItem> financeList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {});
-                for(FinanceItem item : financeList){
+            if (response.getStatus().equals("000")) {
+                List<FinanceItem> financeList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {
+                });
+                for (FinanceItem item : financeList) {
                     logger.debug(item.toString());
                 }
             }
 
 
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
     }
-
-
 
 
 }

@@ -9,7 +9,7 @@ import javax.persistence.Table;
 
 @Entity
 @Data
-@Table(name = "TB_CORP_CORE")
+@Table(name = "TB_CORP_CODE")
 public class CorpCode {
 
     @Id
@@ -18,5 +18,7 @@ public class CorpCode {
     String corpName;
 
     String stockCode;
+
+    String corpState;
 
 }

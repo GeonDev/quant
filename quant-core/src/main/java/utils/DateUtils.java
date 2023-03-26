@@ -23,6 +23,11 @@ public class DateUtils {
     }
 
 
+    public static LocalDate toLocalDate(String str){
+        LocalDate date = LocalDate.parse(str, DateTimeFormatter.ofPattern("yyyyMMdd"));
+        return date;
+    }
+
     public static LocalDate toStringLocalDate(String str){
         LocalDate date = LocalDate.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         return date;
