@@ -47,9 +47,6 @@ public class FinanceItem {
     @Schema(description = "\t당기금액\t9,999,999,999")
     String thstrm_amount;
 
-    @Schema(description = "\t당기금액\t9,999,999,999")
-    String thstrm_add_amount;
-
     @Schema(description = "\t전기명\tex) 제 12 기말")
     String frmtrm_nm;
 
@@ -58,9 +55,6 @@ public class FinanceItem {
 
     @Schema(description = "\t전기금액\t9,999,999,999")
     String frmtrm_amount;
-
-    @Schema(description = "\t전기금액\t9,999,999,999")
-    String frmtrm_add_amount;
 
     @Schema(description = "\t계정과목 정렬순서\t계정과목 정렬순서")
     String ord;

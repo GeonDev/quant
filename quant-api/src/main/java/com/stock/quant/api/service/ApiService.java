@@ -8,8 +8,10 @@ import com.stock.quant.api.model.dart.DartBase;
 import com.stock.quant.api.model.dart.FinanceItem;
 import com.stock.quant.api.model.enums.StockType;
 import com.stock.quant.service.entity.CorpCode;
+import com.stock.quant.service.entity.CorpFinance;
 import com.stock.quant.service.entity.StockPrice;
 import com.stock.quant.service.repository.CorpCodeRepository;
+import com.stock.quant.service.repository.CorpFinanceRepository;
 import com.stock.quant.service.repository.StockPriceRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -50,6 +52,7 @@ public class ApiService {
 
     private final CorpCodeRepository corpCodeRepository;
     private final StockPriceRepository stockPriceRepository;
+    private final CorpFinanceRepository financeRepository;
 
 
     @Value("${signkey.data-go}")
@@ -137,7 +140,6 @@ public class ApiService {
 
 
     //주식 시세 받아오기
-
     public void getStockPrice(String marketType, String basDt, int pageNum, int totalCount, int currentCount) {
         if (totalCount != 0 && totalCount <= currentCount) {
             return;
@@ -240,7 +242,6 @@ public class ApiService {
             DocumentBuilder builder = factory.newDocumentBuilder();
 
             Document document = builder.parse(filePath + "CORPCODE.xml");
-
             NodeList corpList = document.getElementsByTagName("list");
 
             List<CorpCode> codeList = new ArrayList<>();
@@ -301,11 +302,48 @@ public class ApiService {
             DartBase<FinanceItem> response = mapper.readValue(result.getBody(), DartBase.class);
 
             if (response.getStatus().equals("000")) {
-                List<FinanceItem> financeList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {
-                });
+                List<FinanceItem> financeList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {});
+
+                CorpFinance finance = new CorpFinance();
+                finance.setRceptNo(financeList.get(0).getRcept_no());
+                finance.setStockCode(financeList.get(0).getStock_code());
+                finance.setCorpCode(financeList.get(0).getCorp_code());
+
+
                 for (FinanceItem item : financeList) {
-                    logger.debug(item.toString());
+                    if(item.getFs_div().equals("OFS")){
+
+                        Long value = Long.parseLong(item.getThstrm_amount().replace(",",""));
+
+                        if(item.getSj_div().equals("IS")){
+                            if(item.getAccount_nm().equals("매출액")){
+                                finance.setRevenue(value);
+
+                                String[] data = item.getThstrm_dt().replace(".", "").split(" ~ ");
+                                finance.setStart(DateUtils.toLocalDate(data[0]));
+                                finance.setEnd(DateUtils.toLocalDate(data[1]));
+
+                            }else if(item.getAccount_nm().equals("영업이익")){
+                                finance.setOperatingProfit(value);
+                            }else if(item.getAccount_nm().equals("당기순이익")){
+                                finance.setNetIncome(value);
+                            }
+                        }else if(item.getSj_div().equals("BS")){
+                            if(item.getAccount_nm().equals("부채총계")){
+                                finance.setTotalDebt(value);
+                            }else if(item.getAccount_nm().equals("자본금")){
+                                finance.setCapital(value);
+                            }else if(item.getAccount_nm().equals("이익잉여금")){
+                                finance.setEarnedSurplus(value);
+                            }else if(item.getAccount_nm().equals("자본총계")){
+                                finance.setTotalEquity(value);
+                            }else if(item.getAccount_nm().equals("자산총계")){
+                                finance.setTotalAssets(value);
+                            }
+                        }
+                    }
                 }
+                financeRepository.save(finance);
             }
 
 
