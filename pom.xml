@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<packaging>pom</packaging>
 	<modules>
-		<module>stock-service</module>
+		<module>quant-service</module>
 		<module>quant-api</module>
 		<module>quant-core</module>
 	</modules>

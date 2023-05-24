@@ -5,10 +5,12 @@ import lombok.Data;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.Table;
 import java.time.LocalDate;
 
 @Entity
 @Data
+@Table(name = "TB_CORP_FINANCE")
 public class CorpFinance {
 
     @Id
@@ -18,9 +20,9 @@ public class CorpFinance {
 
     String stockCode;
 
-    LocalDate start;
+    LocalDate startDt;
 
-    LocalDate end;
+    LocalDate endDt;
 
     //자본금
     Long capital;
