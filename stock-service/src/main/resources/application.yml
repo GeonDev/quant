@@ -22,15 +22,15 @@ spring:
       hibernate:
         format_sql: true
   datasource:
-    driver-class-name: org.mariadb.jdbc.Driver
-    url: jdbc:mysql://192.168.1.104:3306/db_stock
-    username: remote
-    password: remote1234
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:tcp://localhost/~/db_stock
+    username: sa
+    password:
     hikari:
       maximum-pool-size: 50
-    transaction:
-      default-timeout: 10
-
+  sql:
+    init:
+      mode: always
 
 signkey:
   data-go: UbBresjb6IVpoH2VpdxNeuC0YB8dAr5FQqncYrbSW3XhE3igo5WKraPa5aGHAAHchpnaMbr%2F5gHrKyryz%2FoipQ%3D%3D
@@ -60,11 +60,13 @@ spring:
 
   datasource:
     driver-class-name: org.mariadb.jdbc.Driver
-    url:
-    username: ooooo
-    password: ooooo
+    url: jdbc:mysql://192.168.1.104:3306/db_stock
+    username: remote
+    password: remote1234
     hikari:
-      maximum-pool-size: 10
+      maximum-pool-size: 50
+    transaction:
+      default-timeout: 10
 
 signkey:
   data-go: UbBresjb6IVpoH2VpdxNeuC0YB8dAr5FQqncYrbSW3XhE3igo5WKraPa5aGHAAHchpnaMbr%2F5gHrKyryz%2FoipQ%3D%3D

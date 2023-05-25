@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<packaging>pom</packaging>
 	<modules>
-		<module>quant-service</module>
+		<module>stock-service</module>
 		<module>quant-api</module>
 		<module>quant-core</module>
 	</modules>
@@ -18,7 +18,7 @@
 	<artifactId>quant</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>quant</name>
-	<description>Demo project for Spring Boot</description>
+	<description>project for Spring Boot</description>
 	<properties>
 		<java.version>11</java.version>
 	</properties>
