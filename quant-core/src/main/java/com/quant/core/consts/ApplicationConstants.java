@@ -1,4 +1,4 @@
-package com.stock.quant.api.consts;
+package com.quant.core.consts;
 
 public class ApplicationConstants {
 

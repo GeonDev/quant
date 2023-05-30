@@ -1,6 +1,6 @@
-package com.stock.quant.service.repository;
+package com.quant.stock.repository;
 
-import com.stock.quant.service.entity.StockPrice;
+import com.quant.stock.entity.StockPrice;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface StockPriceRepository extends JpaRepository<StockPrice, String> {

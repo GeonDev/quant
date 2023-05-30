@@ -1,6 +1,6 @@
-package com.stock.quant.service.repository;
+package com.quant.stock.repository;
 
-import com.stock.quant.service.entity.CorpCode;
+import com.quant.stock.entity.CorpCode;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CorpCodeRepository extends JpaRepository<CorpCode, String> {

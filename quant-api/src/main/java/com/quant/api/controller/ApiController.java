@@ -1,6 +1,6 @@
 package com.stock.quant.api.controller;
 
-import com.stock.quant.api.service.ApiService;
+import com.quant.stock.service.ApiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;

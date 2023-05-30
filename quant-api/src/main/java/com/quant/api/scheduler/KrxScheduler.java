@@ -1,6 +1,6 @@
-package com.stock.quant.api.scheduler;
+package com.quant.api.scheduler;
 
-import com.stock.quant.api.service.ApiService;
+import com.quant.stock.service.ApiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;

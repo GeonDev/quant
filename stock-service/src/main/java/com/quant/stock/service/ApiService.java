@@ -1,18 +1,18 @@
-package com.stock.quant.api.service;
+package com.quant.stock.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.stock.quant.api.consts.ApplicationConstants;
-import com.stock.quant.api.model.dart.DartBase;
-import com.stock.quant.api.model.dart.FinanceItem;
-import com.stock.quant.api.model.enums.StockType;
-import com.stock.quant.service.entity.CorpCode;
-import com.stock.quant.service.entity.CorpFinance;
-import com.stock.quant.service.entity.StockPrice;
-import com.stock.quant.service.repository.CorpCodeRepository;
-import com.stock.quant.service.repository.CorpFinanceRepository;
-import com.stock.quant.service.repository.StockPriceRepository;
+import com.quant.core.consts.ApplicationConstants;
+import com.quant.stock.entity.CorpCode;
+import com.quant.stock.entity.CorpFinance;
+import com.quant.stock.entity.StockPrice;
+import com.quant.stock.model.dart.DartBase;
+import com.quant.stock.model.dart.FinanceItem;
+import com.quant.stock.model.enums.StockType;
+import com.quant.stock.repository.CorpCodeRepository;
+import com.quant.stock.repository.CorpFinanceRepository;
+import com.quant.stock.repository.StockPriceRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONArray;
@@ -93,8 +93,6 @@ public class ApiService {
                     .queryParam("ServiceKey", URLDecoder.decode(apiKey, "UTF-8"))
                     .queryParam("numOfRows", 10)
                     .build();
-
-            logger.debug("REST API {}", uri.toString());
 
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
@@ -320,8 +318,8 @@ public class ApiService {
                                 finance.setRevenue(value);
 
                                 String[] data = item.getThstrm_dt().replace(".", "").split(" ~ ");
-                                finance.setStart(DateUtils.toLocalDate(data[0]));
-                                finance.setEnd(DateUtils.toLocalDate(data[1]));
+                                finance.setStartDt(DateUtils.toLocalDate(data[0]));
+                                finance.setEndDt(DateUtils.toLocalDate(data[1]));
 
                             }else if(item.getAccount_nm().equals("영업이익")){
                                 finance.setOperatingProfit(value);

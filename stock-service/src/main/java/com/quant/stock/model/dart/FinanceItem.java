@@ -1,4 +1,4 @@
-package com.stock.quant.api.model.dart;
+package com.quant.stock.model.dart;
 
 
 import io.swagger.v3.oas.annotations.media.Schema;
