@@ -1,7 +1,7 @@
 package com.quant.stock.entity;
 
+import com.quant.stock.model.enums.PriceType;
 import lombok.Data;
-import lombok.NonNull;
 
 import javax.persistence.*;
 import java.time.LocalDate;
@@ -17,14 +17,9 @@ public class StockAverage {
     //기준일
     LocalDate tarDt;
 
-    @NonNull
     @Enumerated(EnumType.STRING)
-    private PriceType priceType;
+    PriceType priceType;
 
     //시초가
     Integer price;
-
-
-
-
 }

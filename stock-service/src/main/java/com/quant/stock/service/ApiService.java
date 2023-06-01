@@ -99,7 +99,6 @@ public class ApiService {
 
             JSONParser parser = new JSONParser();
             JSONObject object = (JSONObject) parser.parse(result.getBody());
-
             JSONObject response = (JSONObject) object.get("response");
             JSONObject header = (JSONObject) response.get("header");
             JSONObject body = (JSONObject) response.get("body");
@@ -109,11 +108,8 @@ public class ApiService {
 
             logger.debug("REST item {}", body.get("items").toString());
             if (!body.get("items").toString().equals("")) {
-
-
                 JSONObject items = (JSONObject) body.get("items");
                 JSONArray itemList = (JSONArray) items.get("item");
-
 
                 if (object != null && header.get("resultMsg").toString().equals(ApplicationConstants.REQUEST_MSG)) {
                     for (int i = 0; i < itemList.size(); i++) {
@@ -162,14 +158,11 @@ public class ApiService {
 
             JSONParser parser = new JSONParser();
             JSONObject object = (JSONObject) parser.parse(result.getBody());
-
             JSONObject response = (JSONObject) object.get("response");
             JSONObject header = (JSONObject) response.get("header");
             JSONObject body = (JSONObject) response.get("body");
 
             totalCount = Integer.parseInt(body.get("totalCount").toString());
-
-            logger.debug("getStockPrice API : {}", header.get("resultMsg").toString());
 
             if (header.get("resultMsg").toString().equals(ApplicationConstants.REQUEST_MSG)) {
 
@@ -250,7 +243,6 @@ public class ApiService {
 
                     //상장된 회사 코드만 저장
                     if (getValue("stock_code", corp) != null && StringUtils.isNotEmpty(getValue("stock_code", corp))) {
-
                         CorpCode code = new CorpCode();
                         code.setCorpCode(getValue("corp_code", corp));
                         code.setStockCode(getValue("stock_code", corp));
@@ -258,7 +250,6 @@ public class ApiService {
                         code.setCorpState("Y");
                         codeList.add(code);
                     }
-
                 }
             }
 
@@ -310,7 +301,6 @@ public class ApiService {
 
                 for (FinanceItem item : financeList) {
                     if(item.getFs_div().equals("OFS")){
-
                         Long value = Long.parseLong(item.getThstrm_amount().replace(",",""));
 
                         if(item.getSj_div().equals("IS")){
@@ -348,8 +338,5 @@ public class ApiService {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
-
-
 }
