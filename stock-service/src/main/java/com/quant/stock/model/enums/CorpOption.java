@@ -5,11 +5,11 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum corpState {
-    ACTIVE("활성"),
-    HALT("거래정지"),
-    caution("투자주의"),
-    DEL("상장폐지");
+public enum CorpOption {
+    BANK("은행주"),
+    CHINA("중국주식"),
+    HOLDING("지주사"),
+    ETC("기타");
 
     private String desc;
 

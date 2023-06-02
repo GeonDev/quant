@@ -53,8 +53,8 @@ logging:
 
 async:
   core-pool-size: 10
-  max-pool-size: 100
-  queue-capacity: 500
+  max-pool-size: 10000
+  queue-capacity: 100000
   thread-name-prefix: STOCK-SERVICES-
 
 ---
@@ -91,8 +91,8 @@ logging:
     root: info
 
 async:
-  core-pool-size: 100
-  max-pool-size: 500
-  queue-capacity: 1000
+  core-pool-size: 10
+  max-pool-size: 10000
+  queue-capacity: 100000
   thread-name-prefix: STOCK-SERVICES-
 ---

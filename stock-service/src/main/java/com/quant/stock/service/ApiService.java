@@ -10,6 +10,7 @@ import com.quant.stock.entity.StockPrice;
 import com.quant.stock.model.dart.DartBase;
 import com.quant.stock.model.dart.FinanceItem;
 import com.quant.stock.model.enums.StockType;
+import com.quant.stock.model.enums.CorpState;
 import com.quant.stock.repository.CorpCodeRepository;
 import com.quant.stock.repository.CorpFinanceRepository;
 import com.quant.stock.repository.StockPriceRepository;
@@ -240,21 +241,35 @@ public class ApiService {
             for (int i = 0; i < corpList.getLength(); i++) {
                 Element corp = (Element) corpList.item(i);
                 if (corp != null) {
-
                     //상장된 회사 코드만 저장
                     if (getValue("stock_code", corp) != null && StringUtils.isNotEmpty(getValue("stock_code", corp))) {
-                        CorpCode code = new CorpCode();
-                        code.setCorpCode(getValue("corp_code", corp));
-                        code.setStockCode(getValue("stock_code", corp));
-                        code.setCorpName(getValue("corp_name", corp));
-                        code.setCorpState("Y");
-                        code.setCheckDt(LocalDate.now());
-                        codeList.add(code);
+
+                        //스팩 종목 제외
+                        if(!getValue("corp_name", corp).contains("스팩") && !getValue("corp_name", corp).contains("기업인수목적")){
+                            CorpCode code = corpCodeRepository.findById(getValue("corp_code", corp)).orElseGet( () -> new CorpCode().builder()
+                                    .corpCode(getValue("corp_code", corp))
+                                    .stockCode(getValue("stock_code", corp))
+                                    .corpName(getValue("corp_name", corp))
+                                    .state(CorpState.ACTIVE)
+                                    .build());
+
+                            //회사 목록에 남아 있으면 폐지 되지 않은 회사
+                            code.setCheckDt(LocalDate.now());
+                            codeList.add(code);
+                        }
                     }
                 }
             }
-
             corpCodeRepository.saveAll(codeList);
+
+            //회사 목록 업데이트 후 일자가 변경되지 않은 회사들 확인
+            List<CorpCode> unCheckedCorpList = corpCodeRepository.findByCheckDtBefore(LocalDate.now());
+
+            for (CorpCode corp :  unCheckedCorpList){
+                corp.setState(CorpState.DEL);
+            }
+
+            corpCodeRepository.saveAll(unCheckedCorpList);
 
         } catch (Exception e) {
             e.printStackTrace();

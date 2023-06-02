@@ -1,17 +1,21 @@
 package com.quant.stock.entity;
 
-import com.quant.stock.model.enums.corpOption;
-import com.quant.stock.model.enums.corpState;
-import lombok.Data;
+import com.quant.stock.model.enums.CorpOption;
+import com.quant.stock.model.enums.CorpState;
+import lombok.*;
 
 import javax.persistence.*;
 import java.time.LocalDate;
 
 
-@Entity
 @Data
+@Entity
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "TB_CORP_CODE")
 public class CorpCode {
+
 
     @Id
     String corpCode;
@@ -21,10 +25,10 @@ public class CorpCode {
     String stockCode;
 
     @Enumerated(EnumType.STRING)
-    corpState state;
+    CorpState state;
 
     @Enumerated(EnumType.STRING)
-    corpOption option;
+    CorpOption option;
 
     String message;
 
