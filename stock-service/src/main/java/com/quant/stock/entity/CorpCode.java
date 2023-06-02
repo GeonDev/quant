@@ -1,10 +1,11 @@
 package com.quant.stock.entity;
 
+import com.quant.stock.model.enums.corpOption;
+import com.quant.stock.model.enums.corpState;
 import lombok.Data;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
+import java.time.LocalDate;
 
 
 @Entity
@@ -19,6 +20,14 @@ public class CorpCode {
 
     String stockCode;
 
-    String corpState;
+    @Enumerated(EnumType.STRING)
+    corpState state;
+
+    @Enumerated(EnumType.STRING)
+    corpOption option;
+
+    String message;
+
+    LocalDate checkDt;
 
 }

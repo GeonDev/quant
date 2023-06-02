@@ -43,7 +43,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-
 @Service
 @RequiredArgsConstructor
 public class ApiService {
@@ -54,6 +53,7 @@ public class ApiService {
     private final StockPriceRepository stockPriceRepository;
     private final CorpFinanceRepository financeRepository;
 
+    private final AsyncService asyncService;
 
     @Value("${signkey.data-go}")
     String apiKey;
@@ -248,6 +248,7 @@ public class ApiService {
                         code.setStockCode(getValue("stock_code", corp));
                         code.setCorpName(getValue("corp_name", corp));
                         code.setCorpState("Y");
+                        code.setCheckDt(LocalDate.now());
                         codeList.add(code);
                     }
                 }
@@ -339,4 +340,11 @@ public class ApiService {
             e.printStackTrace();
         }
     }
+
+    //주식의 가격 평균 배치
+    public void setStockPriceAverage(){
+
+
+    }
+
 }
