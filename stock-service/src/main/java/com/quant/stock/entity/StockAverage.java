@@ -4,12 +4,13 @@ import com.quant.stock.model.enums.PriceType;
 import lombok.Data;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.time.LocalDate;
 
 @Entity
 @Data
 @Table(name = "TB_STOCK_PRICE_AVERAGE")
-public class StockAverage {
+public class StockAverage implements Serializable {
 
     @Id
     String stockCode;

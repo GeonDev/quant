@@ -1,10 +1,9 @@
 package com.quant.stock.entity;
 
 import lombok.Data;
+import lombok.Generated;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.time.LocalDate;
 
 @Entity
@@ -13,6 +12,9 @@ import java.time.LocalDate;
 public class StockPrice {
 
     @Id
+    @GeneratedValue(strategy= GenerationType.IDENTITY)
+    Long priceId;
+
     String stockCode;
 
     //주식시장 구분

@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS tb_corp_finance (
 
 
 CREATE TABLE IF NOT EXISTS tb_stock_price (
-  stock_code varchar(11) NOT NULL,
+  price_id BIGINT NOT NULL,
+  stock_code varchar(11) ,
   market_code varchar(11) ,
   bas_dt date ,
   volume int ,
@@ -41,7 +42,7 @@ CREATE TABLE IF NOT EXISTS tb_stock_price (
   daily_ratio decimal(11,2) ,
   stock_total_cnt bigint ,
   market_total_amt bigint ,
-  PRIMARY KEY (stock_code)
+  PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS tb_stock_price_average (

@@ -361,14 +361,15 @@ public class ApiService {
     //주식의 가격 평균 배치
     public void setStockPriceAverage() {
         List<CorpCode> targetCorp = corpCodeRepository.findByState(CorpState.ACTIVE);
+        LocalDate targetDate = LocalDate.now();
 
         for (CorpCode corp : targetCorp) {
-            asyncService.asyncStockPriceAverage(corp.getStockCode(), PriceType.DAY5);
-            asyncService.asyncStockPriceAverage(corp.getStockCode(), PriceType.DAY20);
-            asyncService.asyncStockPriceAverage(corp.getStockCode(), PriceType.DAY60);
-            asyncService.asyncStockPriceAverage(corp.getStockCode(), PriceType.DAY120);
-            asyncService.asyncStockPriceAverage(corp.getStockCode(), PriceType.DAY200);
-            asyncService.asyncStockPriceAverage(corp.getStockCode(), PriceType.DAY240);
+            asyncService.asyncStockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY5);
+            asyncService.asyncStockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY20);
+            asyncService.asyncStockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY60);
+            asyncService.asyncStockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY120);
+            asyncService.asyncStockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY200);
+            asyncService.asyncStockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY240);
         }
     }
 

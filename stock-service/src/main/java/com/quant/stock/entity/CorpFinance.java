@@ -6,12 +6,13 @@ import lombok.Data;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import java.io.Serializable;
 import java.time.LocalDate;
 
 @Entity
 @Data
 @Table(name = "TB_CORP_FINANCE")
-public class CorpFinance {
+public class CorpFinance implements Serializable {
 
     @Id
     String rceptNo;

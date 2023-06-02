@@ -5,6 +5,7 @@ import com.quant.stock.model.enums.CorpState;
 import lombok.*;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.time.LocalDate;
 
 
@@ -14,7 +15,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "TB_CORP_CODE")
-public class CorpCode {
+public class CorpCode implements Serializable {
 
 
     @Id
