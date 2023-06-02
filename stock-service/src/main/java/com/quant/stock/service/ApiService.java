@@ -9,6 +9,7 @@ import com.quant.stock.entity.CorpFinance;
 import com.quant.stock.entity.StockPrice;
 import com.quant.stock.model.dart.DartBase;
 import com.quant.stock.model.dart.FinanceItem;
+import com.quant.stock.model.enums.PriceType;
 import com.quant.stock.model.enums.StockType;
 import com.quant.stock.model.enums.CorpState;
 import com.quant.stock.repository.CorpCodeRepository;
@@ -245,15 +246,15 @@ public class ApiService {
                     if (getValue("stock_code", corp) != null && StringUtils.isNotEmpty(getValue("stock_code", corp))) {
 
                         //스팩 종목 제외
-                        if(!getValue("corp_name", corp).contains("스팩") && !getValue("corp_name", corp).contains("기업인수목적")){
-                            CorpCode code = corpCodeRepository.findById(getValue("corp_code", corp)).orElseGet( () -> new CorpCode().builder()
+                        if (!getValue("corp_name", corp).contains("스팩") && !getValue("corp_name", corp).contains("기업인수목적")) {
+                            CorpCode code = corpCodeRepository.findById(getValue("corp_code", corp)).orElseGet(() -> new CorpCode().builder()
                                     .corpCode(getValue("corp_code", corp))
                                     .stockCode(getValue("stock_code", corp))
                                     .corpName(getValue("corp_name", corp))
                                     .state(CorpState.ACTIVE)
                                     .build());
 
-                            //회사 목록에 남아 있으면 폐지 되지 않은 회사
+                            //체크 일자 업데이트
                             code.setCheckDt(LocalDate.now());
                             codeList.add(code);
                         }
@@ -265,7 +266,7 @@ public class ApiService {
             //회사 목록 업데이트 후 일자가 변경되지 않은 회사들 확인
             List<CorpCode> unCheckedCorpList = corpCodeRepository.findByCheckDtBefore(LocalDate.now());
 
-            for (CorpCode corp :  unCheckedCorpList){
+            for (CorpCode corp : unCheckedCorpList) {
                 corp.setState(CorpState.DEL);
             }
 
@@ -307,7 +308,8 @@ public class ApiService {
             DartBase<FinanceItem> response = mapper.readValue(result.getBody(), DartBase.class);
 
             if (response.getStatus().equals("000")) {
-                List<FinanceItem> financeList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {});
+                List<FinanceItem> financeList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {
+                });
 
                 CorpFinance finance = new CorpFinance();
                 finance.setRceptNo(financeList.get(0).getRcept_no());
@@ -316,32 +318,32 @@ public class ApiService {
 
 
                 for (FinanceItem item : financeList) {
-                    if(item.getFs_div().equals("OFS")){
-                        Long value = Long.parseLong(item.getThstrm_amount().replace(",",""));
+                    if (item.getFs_div().equals("OFS")) {
+                        Long value = Long.parseLong(item.getThstrm_amount().replace(",", ""));
 
-                        if(item.getSj_div().equals("IS")){
-                            if(item.getAccount_nm().equals("매출액")){
+                        if (item.getSj_div().equals("IS")) {
+                            if (item.getAccount_nm().equals("매출액")) {
                                 finance.setRevenue(value);
 
                                 String[] data = item.getThstrm_dt().replace(".", "").split(" ~ ");
                                 finance.setStartDt(DateUtils.toLocalDate(data[0]));
                                 finance.setEndDt(DateUtils.toLocalDate(data[1]));
 
-                            }else if(item.getAccount_nm().equals("영업이익")){
+                            } else if (item.getAccount_nm().equals("영업이익")) {
                                 finance.setOperatingProfit(value);
-                            }else if(item.getAccount_nm().equals("당기순이익")){
+                            } else if (item.getAccount_nm().equals("당기순이익")) {
                                 finance.setNetIncome(value);
                             }
-                        }else if(item.getSj_div().equals("BS")){
-                            if(item.getAccount_nm().equals("부채총계")){
+                        } else if (item.getSj_div().equals("BS")) {
+                            if (item.getAccount_nm().equals("부채총계")) {
                                 finance.setTotalDebt(value);
-                            }else if(item.getAccount_nm().equals("자본금")){
+                            } else if (item.getAccount_nm().equals("자본금")) {
                                 finance.setCapital(value);
-                            }else if(item.getAccount_nm().equals("이익잉여금")){
+                            } else if (item.getAccount_nm().equals("이익잉여금")) {
                                 finance.setEarnedSurplus(value);
-                            }else if(item.getAccount_nm().equals("자본총계")){
+                            } else if (item.getAccount_nm().equals("자본총계")) {
                                 finance.setTotalEquity(value);
-                            }else if(item.getAccount_nm().equals("자산총계")){
+                            } else if (item.getAccount_nm().equals("자산총계")) {
                                 finance.setTotalAssets(value);
                             }
                         }
@@ -357,9 +359,17 @@ public class ApiService {
     }
 
     //주식의 가격 평균 배치
-    public void setStockPriceAverage(){
+    public void setStockPriceAverage() {
+        List<CorpCode> targetCorp = corpCodeRepository.findByState(CorpState.ACTIVE);
 
-
+        for (CorpCode corp : targetCorp) {
+            asyncService.asyncStockPriceAverage(corp.getStockCode(), PriceType.DAY5);
+            asyncService.asyncStockPriceAverage(corp.getStockCode(), PriceType.DAY20);
+            asyncService.asyncStockPriceAverage(corp.getStockCode(), PriceType.DAY60);
+            asyncService.asyncStockPriceAverage(corp.getStockCode(), PriceType.DAY120);
+            asyncService.asyncStockPriceAverage(corp.getStockCode(), PriceType.DAY200);
+            asyncService.asyncStockPriceAverage(corp.getStockCode(), PriceType.DAY240);
+        }
     }
 
 }
