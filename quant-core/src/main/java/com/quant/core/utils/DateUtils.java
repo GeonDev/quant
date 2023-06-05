@@ -1,4 +1,4 @@
-package utils;
+package com.quant.core.utils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -14,12 +14,6 @@ public class DateUtils {
 
     public static String getStringDateFormat(LocalDateTime ldt , String pattern){
         return ldt.format(DateTimeFormatter.ofPattern(pattern).withLocale(Locale.KOREAN));
-    }
-
-
-    public static LocalDateTime toStringLocalDateTime(String str){
-        LocalDate date = LocalDate.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        return date.atStartOfDay();
     }
 
 

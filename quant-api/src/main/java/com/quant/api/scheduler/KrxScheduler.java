@@ -14,8 +14,9 @@ public class KrxScheduler {
 
     @Scheduled(cron = "${cron.krx.daily-info}")
     private void koreaStockInfoScheduler(){
-        apiService.getKrxDailyInfo("");
+        apiService.getKrxDailyInfo();
         apiService.getDartCorpCodeInfo();
+        apiService.setStockPriceAverage();
     }
 
 }

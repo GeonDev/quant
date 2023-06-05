@@ -1,9 +1,9 @@
-CREATE TABLE IF NOT EXISTS tb_corp_code (
+CREATE TABLE IF NOT EXISTS tb_corp_info (
   corp_code varchar(11) NOT NULL,
   corp_name text,
   stock_code varchar(11) ,
   state varchar(5) DEFAULT 'Y' COMMENT 'Y : 정상 , N : 거래정지 또는 상장 폐지',
-  option varchar(11) ,
+  corp_type varchar(11) ,
   message text ,
   check_dt date,
   PRIMARY KEY (corp_code)

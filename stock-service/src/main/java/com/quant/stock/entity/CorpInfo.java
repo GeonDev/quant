@@ -1,7 +1,8 @@
 package com.quant.stock.entity;
 
-import com.quant.stock.model.enums.CorpOption;
+import com.quant.stock.model.enums.CorpType;
 import com.quant.stock.model.enums.CorpState;
+import com.quant.stock.model.enums.IncomeState;
 import lombok.*;
 
 import javax.persistence.*;
@@ -14,8 +15,8 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "TB_CORP_CODE")
-public class CorpCode implements Serializable {
+@Table(name = "TB_CORP_INFO")
+public class CorpInfo implements Serializable {
 
 
     @Id
@@ -29,7 +30,10 @@ public class CorpCode implements Serializable {
     CorpState state;
 
     @Enumerated(EnumType.STRING)
-    CorpOption option;
+    CorpType corpType;
+
+    @Enumerated(EnumType.STRING)
+    IncomeState income;
 
     String message;
 

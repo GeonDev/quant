@@ -4,7 +4,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.core.consts.ApplicationConstants;
-import com.quant.stock.entity.CorpCode;
+import com.quant.core.utils.CommonUtils;
+import com.quant.core.utils.DateUtils;
+import com.quant.stock.entity.CorpInfo;
 import com.quant.stock.entity.CorpFinance;
 import com.quant.stock.entity.StockPrice;
 import com.quant.stock.model.dart.DartBase;
@@ -32,8 +34,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import utils.CommonUtils;
-import utils.DateUtils;
+
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -67,12 +68,13 @@ public class ApiService {
     String filePath;
 
 
-    //주식 시장 활성일 체크 -> 활성일 일 경우 주식 시세 받기
-    public void getKrxDailyInfo(String date) {
-        getKrxStockPrice(date.equals("") ? LocalDate.now() : DateUtils.toStringLocalDate(date));
+
+    public void getKrxDailyInfo() {
+        getKrxDailyInfo( LocalDate.now());
     }
 
-    private void getKrxStockPrice(LocalDate targetDate) {
+    //주식 시장 활성일 체크 -> 활성일 일 경우 주식 시세 받기
+    public void getKrxDailyInfo(LocalDate targetDate) {
 
         logger.debug("getKrxStockPrice date : {}", targetDate);
 
@@ -237,7 +239,7 @@ public class ApiService {
             Document document = builder.parse(filePath + "CORPCODE.xml");
             NodeList corpList = document.getElementsByTagName("list");
 
-            List<CorpCode> codeList = new ArrayList<>();
+            List<CorpInfo> codeList = new ArrayList<>();
 
             for (int i = 0; i < corpList.getLength(); i++) {
                 Element corp = (Element) corpList.item(i);
@@ -247,7 +249,7 @@ public class ApiService {
 
                         //스팩 종목 제외
                         if (!getValue("corp_name", corp).contains("스팩") && !getValue("corp_name", corp).contains("기업인수목적")) {
-                            CorpCode code = corpCodeRepository.findById(getValue("corp_code", corp)).orElseGet(() -> new CorpCode().builder()
+                            CorpInfo code = corpCodeRepository.findById(getValue("corp_code", corp)).orElseGet(() -> new CorpInfo().builder()
                                     .corpCode(getValue("corp_code", corp))
                                     .stockCode(getValue("stock_code", corp))
                                     .corpName(getValue("corp_name", corp))
@@ -264,9 +266,9 @@ public class ApiService {
             corpCodeRepository.saveAll(codeList);
 
             //회사 목록 업데이트 후 일자가 변경되지 않은 회사들 확인
-            List<CorpCode> unCheckedCorpList = corpCodeRepository.findByCheckDtBefore(LocalDate.now());
+            List<CorpInfo> unCheckedCorpList = corpCodeRepository.findByCheckDtBefore(LocalDate.now());
 
-            for (CorpCode corp : unCheckedCorpList) {
+            for (CorpInfo corp : unCheckedCorpList) {
                 corp.setState(CorpState.DEL);
             }
 
@@ -285,7 +287,7 @@ public class ApiService {
     }
 
 
-    // 살장회사 재무 정보 다운로드
+    // 상장회사 재무 정보 다운로드
     public void getCorpFinanceInfo(String corpCode, String year, String reprtCode) {
         UriComponents uri = UriComponentsBuilder
                 .newInstance()
@@ -360,10 +362,10 @@ public class ApiService {
 
     //주식의 가격 평균 배치
     public void setStockPriceAverage() {
-        List<CorpCode> targetCorp = corpCodeRepository.findByState(CorpState.ACTIVE);
+        List<CorpInfo> targetCorp = corpCodeRepository.findByState(CorpState.ACTIVE);
         LocalDate targetDate = LocalDate.now();
 
-        for (CorpCode corp : targetCorp) {
+        for (CorpInfo corp : targetCorp) {
             asyncService.asyncStockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY5);
             asyncService.asyncStockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY20);
             asyncService.asyncStockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY60);
