@@ -23,9 +23,8 @@ public class ApiController {
         LocalDate targetDate = DateUtils.toStringLocalDate(date);
 
         apiService.getKrxDailyInfo(targetDate);
-        return ResponseEntity.ok("End");
+        return ResponseEntity.ok("");
     }
-
 
     @GetMapping(value = "code", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getCorpCode( ){
@@ -36,6 +35,14 @@ public class ApiController {
     @GetMapping(value = "fin", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getFinance( ){
         apiService.getCorpFinanceInfo( "00565154", "2021" , "11013" );
+        return ResponseEntity.ok("");
+    }
+
+    @GetMapping(value = "average", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity getAveragePrice(@RequestParam(value = "date", required = false, defaultValue = "") String date){
+        LocalDate targetDate = DateUtils.toStringLocalDate(date);
+
+        apiService.setStockPriceAverage(targetDate);
         return ResponseEntity.ok("");
     }
 

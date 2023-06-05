@@ -360,10 +360,17 @@ public class ApiService {
         }
     }
 
-    //주식의 가격 평균 배치
+
+
     public void setStockPriceAverage() {
-        List<CorpInfo> targetCorp = corpCodeRepository.findByState(CorpState.ACTIVE);
         LocalDate targetDate = LocalDate.now();
+        setStockPriceAverage(targetDate);
+
+    }
+
+    //주식의 가격 평균 배치(비동기)
+    public void setStockPriceAverage(LocalDate targetDate) {
+        List<CorpInfo> targetCorp = corpCodeRepository.findByState(CorpState.ACTIVE);
 
         for (CorpInfo corp : targetCorp) {
             asyncService.asyncStockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY5);
