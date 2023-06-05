@@ -21,6 +21,6 @@ public class StockAverage implements Serializable {
     @Enumerated(EnumType.STRING)
     PriceType priceType;
 
-    //시초가
+    //평균가
     Integer price;
 }
