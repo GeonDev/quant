@@ -3,9 +3,7 @@ package com.quant.stock.entity;
 
 import lombok.Data;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDate;
 
@@ -15,11 +13,16 @@ import java.time.LocalDate;
 public class CorpFinance implements Serializable {
 
     @Id
+    @GeneratedValue(strategy= GenerationType.IDENTITY)
+    Long financeId;
+
     String rceptNo;
 
     String corpCode;
 
     String stockCode;
+
+    String years;
 
     LocalDate startDt;
 

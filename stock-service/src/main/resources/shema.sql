@@ -11,9 +11,11 @@ CREATE TABLE IF NOT EXISTS tb_corp_info (
 
 
 CREATE TABLE IF NOT EXISTS tb_corp_finance (
-  rcept_no varchar(11) NOT NULL,
+  finance_id BIGINT NOT NULL,
+  rcept_no varchar(5),
   corp_code varchar(11) ,
   stock_code varchar(11) ,
+  years varchar(4),
   start_dt date ,
   end_dt date ,
   capital bigint,
@@ -27,7 +29,7 @@ CREATE TABLE IF NOT EXISTS tb_corp_finance (
   PSR double,
   PBR double,
   PER double,
-  PRIMARY KEY (rcept_no)
+  PRIMARY KEY (finance_id)
 );
 
 

@@ -287,6 +287,29 @@ public class ApiService {
     }
 
 
+
+
+
+    public void getCorpFinanceInfo(){
+        List<CorpInfo> infoList = corpCodeRepository.findByState(CorpState.ACTIVE);
+
+        String year = Integer.toString(LocalDate.now().getYear());
+
+        for(CorpInfo info : infoList ){
+            //1분기 보고서
+            getCorpFinanceInfo(info.getCorpCode(), year, "11013");
+            //반기 보고서
+            getCorpFinanceInfo(info.getCorpCode(), year, "11012");
+            //3분기 보고서
+            getCorpFinanceInfo(info.getCorpCode(), year, "11014");
+            //사업 보고서
+            getCorpFinanceInfo(info.getCorpCode(), year, "11011");
+        }
+    }
+
+
+
+
     // 상장회사 재무 정보 다운로드
     public void getCorpFinanceInfo(String corpCode, String year, String reprtCode) {
         UriComponents uri = UriComponentsBuilder
@@ -310,60 +333,64 @@ public class ApiService {
             DartBase<FinanceItem> response = mapper.readValue(result.getBody(), DartBase.class);
 
             if (response.getStatus().equals("000")) {
-                List<CorpFinance> financeList = null;
 
-                List<FinanceItem> financeSrcList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {
-                });
+                if( financeRepository.findByCorpCodeAndAndRceptNoAndYears(corpCode, reprtCode, year) == null ){
 
-                CorpFinance finance = new CorpFinance();
-                finance.setRceptNo(financeSrcList.get(0).getRcept_no());
-                finance.setStockCode(financeSrcList.get(0).getStock_code());
-                finance.setCorpCode(financeSrcList.get(0).getCorp_code());
+                    List<CorpFinance> financeList = null;
+
+                    List<FinanceItem> financeSrcList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {});
+
+                    CorpFinance finance = new CorpFinance();
+
+                    finance.setRceptNo(financeSrcList.get(0).getRcept_no());
+                    finance.setYears(year);
+                    finance.setStockCode(financeSrcList.get(0).getStock_code());
+                    finance.setCorpCode(financeSrcList.get(0).getCorp_code());
 
 
-                for (FinanceItem item : financeSrcList) {
-                    if (item.getFs_div().equals("OFS")) {
-                        Long value = Long.parseLong(item.getThstrm_amount().replace(",", ""));
+                    for (FinanceItem item : financeSrcList) {
+                        if (item.getFs_div().equals("OFS")) {
+                            Long value = Long.parseLong(item.getThstrm_amount().replace(",", ""));
 
-                        if (item.getSj_div().equals("IS")) {
-                            if (item.getAccount_nm().equals("매출액")) {
-                                finance.setRevenue(value);
+                            if (item.getSj_div().equals("IS")) {
+                                if (item.getAccount_nm().equals("매출액")) {
+                                    finance.setRevenue(value);
 
-                                String[] data = item.getThstrm_dt().replace(".", "").split(" ~ ");
-                                finance.setStartDt(DateUtils.toLocalDate(data[0]));
-                                finance.setEndDt(DateUtils.toLocalDate(data[1]));
+                                    String[] data = item.getThstrm_dt().replace(".", "").split(" ~ ");
+                                    finance.setStartDt(DateUtils.toLocalDate(data[0]));
+                                    finance.setEndDt(DateUtils.toLocalDate(data[1]));
 
-                            } else if (item.getAccount_nm().equals("영업이익")) {
-                                finance.setOperatingProfit(value);
-                            } else if (item.getAccount_nm().equals("당기순이익")) {
-                                finance.setNetIncome(value);
-                            }
-                        } else if (item.getSj_div().equals("BS")) {
-                            if (item.getAccount_nm().equals("부채총계")) {
-                                finance.setTotalDebt(value);
-                            } else if (item.getAccount_nm().equals("자본금")) {
-                                finance.setCapital(value);
-                            } else if (item.getAccount_nm().equals("이익잉여금")) {
-                                finance.setEarnedSurplus(value);
-                            } else if (item.getAccount_nm().equals("자본총계")) {
-                                finance.setTotalEquity(value);
-                            } else if (item.getAccount_nm().equals("자산총계")) {
-                                finance.setTotalAssets(value);
+                                } else if (item.getAccount_nm().equals("영업이익")) {
+                                    finance.setOperatingProfit(value);
+                                } else if (item.getAccount_nm().equals("당기순이익")) {
+                                    finance.setNetIncome(value);
+                                }
+                            } else if (item.getSj_div().equals("BS")) {
+                                if (item.getAccount_nm().equals("부채총계")) {
+                                    finance.setTotalDebt(value);
+                                } else if (item.getAccount_nm().equals("자본금")) {
+                                    finance.setCapital(value);
+                                } else if (item.getAccount_nm().equals("이익잉여금")) {
+                                    finance.setEarnedSurplus(value);
+                                } else if (item.getAccount_nm().equals("자본총계")) {
+                                    finance.setTotalEquity(value);
+                                } else if (item.getAccount_nm().equals("자산총계")) {
+                                    finance.setTotalAssets(value);
+                                }
                             }
                         }
+
+                        //시장가 불러오기
+                        StockPrice nowPrice = stockPriceRepository.findTopByStockCodeOrderByBasDtDesc(finance.getStockCode());
+
+                        finance.setPSR( nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue());
+                        finance.setPBR( nowPrice.getMarketTotalAmt().doubleValue() / finance.getTotalEquity().doubleValue());
+                        finance.setPER( nowPrice.getMarketTotalAmt().doubleValue() / finance.getNetIncome().doubleValue());
+
+                        financeList.add(finance);
                     }
-
-                    //시장가 불러오기
-                    StockPrice nowPrice = stockPriceRepository.findTopByStockCodeOrderByBasDtDesc(finance.getStockCode());
-
-                    finance.setPSR( nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue());
-                    finance.setPBR( nowPrice.getMarketTotalAmt().doubleValue() / finance.getTotalEquity().doubleValue());
-                    finance.setPER( nowPrice.getMarketTotalAmt().doubleValue() / finance.getNetIncome().doubleValue());
-
-                    financeList.add(finance);
+                    financeRepository.saveAll(financeList);
                 }
-
-                financeRepository.saveAll(financeList);
             }
 
         } catch (Exception e) {
