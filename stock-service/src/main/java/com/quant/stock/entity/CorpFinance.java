@@ -49,4 +49,14 @@ public class CorpFinance implements Serializable {
     //이익 잉여금
     Long earnedSurplus;
 
+    // 시가총액 % 매출액
+    Double PSR;
+
+    // 시가총액 % 자본 총계
+    Double PBR;
+
+    // 시가총액 % 당기 순이익
+    Double PER;
+
+
 }

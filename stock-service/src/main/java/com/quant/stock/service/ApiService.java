@@ -310,16 +310,18 @@ public class ApiService {
             DartBase<FinanceItem> response = mapper.readValue(result.getBody(), DartBase.class);
 
             if (response.getStatus().equals("000")) {
-                List<FinanceItem> financeList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {
+                List<CorpFinance> financeList = null;
+
+                List<FinanceItem> financeSrcList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {
                 });
 
                 CorpFinance finance = new CorpFinance();
-                finance.setRceptNo(financeList.get(0).getRcept_no());
-                finance.setStockCode(financeList.get(0).getStock_code());
-                finance.setCorpCode(financeList.get(0).getCorp_code());
+                finance.setRceptNo(financeSrcList.get(0).getRcept_no());
+                finance.setStockCode(financeSrcList.get(0).getStock_code());
+                finance.setCorpCode(financeSrcList.get(0).getCorp_code());
 
 
-                for (FinanceItem item : financeList) {
+                for (FinanceItem item : financeSrcList) {
                     if (item.getFs_div().equals("OFS")) {
                         Long value = Long.parseLong(item.getThstrm_amount().replace(",", ""));
 
@@ -350,10 +352,19 @@ public class ApiService {
                             }
                         }
                     }
-                }
-                financeRepository.save(finance);
-            }
 
+                    //시장가 불러오기
+                    StockPrice nowPrice = stockPriceRepository.findTopByStockCodeOrderByBasDtDesc(finance.getStockCode());
+
+                    finance.setPSR( nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue());
+                    finance.setPBR( nowPrice.getMarketTotalAmt().doubleValue() / finance.getTotalEquity().doubleValue());
+                    finance.setPER( nowPrice.getMarketTotalAmt().doubleValue() / finance.getNetIncome().doubleValue());
+
+                    financeList.add(finance);
+                }
+
+                financeRepository.saveAll(financeList);
+            }
 
         } catch (Exception e) {
             e.printStackTrace();

@@ -18,7 +18,6 @@ import java.time.LocalDate;
 @Table(name = "TB_CORP_INFO")
 public class CorpInfo implements Serializable {
 
-
     @Id
     String corpCode;
 
@@ -30,10 +29,10 @@ public class CorpInfo implements Serializable {
     CorpState state;
 
     @Enumerated(EnumType.STRING)
-    CorpType corpType;
+    IncomeState income;
 
     @Enumerated(EnumType.STRING)
-    IncomeState income;
+    CorpType corpType;
 
     String message;
 

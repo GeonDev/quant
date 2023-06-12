@@ -24,6 +24,9 @@ CREATE TABLE IF NOT EXISTS tb_corp_finance (
   operating_profit bigint,
   net_income bigint,
   earned_surplus bigint,
+  PSR double,
+  PBR double,
+  PER double,
   PRIMARY KEY (rcept_no)
 );
 
@@ -38,11 +41,11 @@ CREATE TABLE IF NOT EXISTS tb_stock_price (
   end_price int ,
   high_price int ,
   low_price int ,
-  daily_range decimal(11,0) ,
-  daily_ratio decimal(11,2) ,
+  daily_range double ,
+  daily_ratio double ,
   stock_total_cnt bigint ,
   market_total_amt bigint ,
-  PRIMARY KEY (id)
+  PRIMARY KEY (price_id)
 );
 
 CREATE TABLE IF NOT EXISTS tb_stock_price_average (
