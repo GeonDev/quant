@@ -14,7 +14,7 @@ import com.quant.stock.model.dart.FinanceItem;
 import com.quant.stock.model.enums.PriceType;
 import com.quant.stock.model.enums.StockType;
 import com.quant.stock.model.enums.CorpState;
-import com.quant.stock.repository.CorpCodeRepository;
+import com.quant.stock.repository.CorpInfoRepository;
 import com.quant.stock.repository.CorpFinanceRepository;
 import com.quant.stock.repository.StockPriceRepository;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +52,7 @@ public class ApiService {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    private final CorpCodeRepository corpCodeRepository;
+    private final CorpInfoRepository corpInfoRepository;
     private final StockPriceRepository stockPriceRepository;
     private final CorpFinanceRepository financeRepository;
 
@@ -68,9 +68,8 @@ public class ApiService {
     String filePath;
 
 
-
     public void getKrxDailyInfo() {
-        getKrxDailyInfo( LocalDate.now());
+        getKrxDailyInfo(LocalDate.now());
     }
 
     //주식 시장 활성일 체크 -> 활성일 일 경우 주식 시세 받기
@@ -249,7 +248,7 @@ public class ApiService {
 
                         //스팩 종목 제외
                         if (!getValue("corp_name", corp).contains("스팩") && !getValue("corp_name", corp).contains("기업인수목적")) {
-                            CorpInfo code = corpCodeRepository.findById(getValue("corp_code", corp)).orElseGet(() -> new CorpInfo().builder()
+                            CorpInfo code = corpInfoRepository.findById(getValue("corp_code", corp)).orElseGet(() -> new CorpInfo().builder()
                                     .corpCode(getValue("corp_code", corp))
                                     .stockCode(getValue("stock_code", corp))
                                     .corpName(getValue("corp_name", corp))
@@ -263,16 +262,16 @@ public class ApiService {
                     }
                 }
             }
-            corpCodeRepository.saveAll(codeList);
+            corpInfoRepository.saveAll(codeList);
 
             //회사 목록 업데이트 후 일자가 변경되지 않은 회사들 확인
-            List<CorpInfo> unCheckedCorpList = corpCodeRepository.findByCheckDtBefore(LocalDate.now());
+            List<CorpInfo> unCheckedCorpList = corpInfoRepository.findByCheckDtBefore(LocalDate.now());
 
             for (CorpInfo corp : unCheckedCorpList) {
                 corp.setState(CorpState.DEL);
             }
 
-            corpCodeRepository.saveAll(unCheckedCorpList);
+            corpInfoRepository.saveAll(unCheckedCorpList);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -287,31 +286,26 @@ public class ApiService {
     }
 
 
-
-
-
-    public void getCorpFinanceInfo(){
-        List<CorpInfo> infoList = corpCodeRepository.findByState(CorpState.ACTIVE);
+    public void setCorpFinanceInfo() {
+        List<CorpInfo> infoList = corpInfoRepository.findByState(CorpState.ACTIVE);
 
         String year = Integer.toString(LocalDate.now().getYear());
 
-        for(CorpInfo info : infoList ){
+        for (CorpInfo info : infoList) {
             //1분기 보고서
-            getCorpFinanceInfo(info.getCorpCode(), year, "11013");
+            setCorpFinanceInfo(info.getCorpCode(), year, "11013");
             //반기 보고서
-            getCorpFinanceInfo(info.getCorpCode(), year, "11012");
+            setCorpFinanceInfo(info.getCorpCode(), year, "11012");
             //3분기 보고서
-            getCorpFinanceInfo(info.getCorpCode(), year, "11014");
+            setCorpFinanceInfo(info.getCorpCode(), year, "11014");
             //사업 보고서
-            getCorpFinanceInfo(info.getCorpCode(), year, "11011");
+            setCorpFinanceInfo(info.getCorpCode(), year, "11011");
         }
     }
 
 
-
-
     // 상장회사 재무 정보 다운로드
-    public void getCorpFinanceInfo(String corpCode, String year, String reprtCode) {
+    public void setCorpFinanceInfo(String corpCode, String year, String reprtCode) {
         UriComponents uri = UriComponentsBuilder
                 .newInstance()
                 .scheme("https")
@@ -334,11 +328,12 @@ public class ApiService {
 
             if (response.getStatus().equals("000")) {
 
-                if( financeRepository.findByCorpCodeAndAndRceptNoAndYears(corpCode, reprtCode, year) == null ){
+                if (financeRepository.findByCorpCodeAndRceptNoAndYears(corpCode, reprtCode, year) == null) {
 
                     List<CorpFinance> financeList = null;
 
-                    List<FinanceItem> financeSrcList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {});
+                    List<FinanceItem> financeSrcList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {
+                    });
 
                     CorpFinance finance = new CorpFinance();
 
@@ -379,15 +374,6 @@ public class ApiService {
                                 }
                             }
                         }
-
-                        //시장가 불러오기
-                        StockPrice nowPrice = stockPriceRepository.findTopByStockCodeOrderByBasDtDesc(finance.getStockCode());
-
-                        finance.setPSR( nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue());
-                        finance.setPBR( nowPrice.getMarketTotalAmt().doubleValue() / finance.getTotalEquity().doubleValue());
-                        finance.setPER( nowPrice.getMarketTotalAmt().doubleValue() / finance.getNetIncome().doubleValue());
-
-                        financeList.add(finance);
                     }
                     financeRepository.saveAll(financeList);
                 }
@@ -399,6 +385,22 @@ public class ApiService {
     }
 
 
+    public void setFinanceIndicators(String year, String reprtCode){
+
+        List<CorpFinance> financeList = financeRepository.findByRceptNoAndYears(reprtCode, year);
+
+        for (CorpFinance finance : financeList ){
+            //시장가 불러오기
+            StockPrice nowPrice = stockPriceRepository.findTopByStockCodeOrderByBasDtDesc(finance.getStockCode());
+
+            finance.setPSR( nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue());
+            finance.setPBR( nowPrice.getMarketTotalAmt().doubleValue() / finance.getTotalEquity().doubleValue());
+            finance.setPER( nowPrice.getMarketTotalAmt().doubleValue() / finance.getNetIncome().doubleValue());
+        }
+
+        financeRepository.saveAll(financeList);
+    }
+
 
     public void setStockPriceAverage() {
         LocalDate targetDate = LocalDate.now();
@@ -408,7 +410,7 @@ public class ApiService {
 
     //주식의 가격 평균 배치(비동기)
     public void setStockPriceAverage(LocalDate targetDate) {
-        List<CorpInfo> targetCorp = corpCodeRepository.findByState(CorpState.ACTIVE);
+        List<CorpInfo> targetCorp = corpInfoRepository.findByState(CorpState.ACTIVE);
 
         for (CorpInfo corp : targetCorp) {
             asyncService.asyncStockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY5);
