@@ -286,7 +286,7 @@ public class ApiService {
     }
 
 
-    public void setCorpFinanceInfo() {
+    public void getCorpFinanceInfo() {
         List<CorpInfo> infoList = corpInfoRepository.findByState(CorpState.ACTIVE);
 
         String year = Integer.toString(LocalDate.now().getYear());
@@ -294,12 +294,19 @@ public class ApiService {
         for (CorpInfo info : infoList) {
             //1분기 보고서
             setCorpFinanceInfo(info.getCorpCode(), year, "11013");
+            setFinanceIndicators(year, "11013");
+
             //반기 보고서
             setCorpFinanceInfo(info.getCorpCode(), year, "11012");
+            setFinanceIndicators(year, "11012");
+
             //3분기 보고서
             setCorpFinanceInfo(info.getCorpCode(), year, "11014");
+            setFinanceIndicators(year, "11014");
+
             //사업 보고서
             setCorpFinanceInfo(info.getCorpCode(), year, "11011");
+            setFinanceIndicators(year, "11011");
         }
     }
 
@@ -390,8 +397,8 @@ public class ApiService {
         List<CorpFinance> financeList = financeRepository.findByRceptNoAndYears(reprtCode, year);
 
         for (CorpFinance finance : financeList ){
-            //시장가 불러오기
-            StockPrice nowPrice = stockPriceRepository.findTopByStockCodeOrderByBasDtDesc(finance.getStockCode());
+            //분기 데이터의 마지막일자 시장가 불러오기
+            StockPrice nowPrice = stockPriceRepository.findTopByStockCodeAndBasDtBeforeOrderByBasDtDesc(finance.getStockCode(), finance.getEndDt());
 
             finance.setPSR( nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue());
             finance.setPBR( nowPrice.getMarketTotalAmt().doubleValue() / finance.getTotalEquity().doubleValue());

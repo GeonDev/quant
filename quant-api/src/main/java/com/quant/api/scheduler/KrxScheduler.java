@@ -19,4 +19,9 @@ public class KrxScheduler {
         apiService.setStockPriceAverage();
     }
 
+    @Scheduled(cron = "${cron.krx.month-info}")
+    private void koreaStockFinanceScheduler(){
+        apiService.getCorpFinanceInfo();
+    }
+
 }

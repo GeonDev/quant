@@ -43,6 +43,7 @@ file:
 cron:
   krx:
     daily-info: 0 0 14 * * 1-6
+    month-info: 0 0 15 1 * *
 
 logging:
   level:
