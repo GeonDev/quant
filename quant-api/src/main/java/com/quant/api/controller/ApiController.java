@@ -33,8 +33,16 @@ public class ApiController {
     }
 
     @GetMapping(value = "fin", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity getFinance( ){
-        apiService.setCorpFinanceInfo( "00565154", "2021" , "11013" );
+    public ResponseEntity getFinance( @RequestParam(value = "corpCode") String corpCode,
+                                      @RequestParam(value = "reprtCode") String reprtCode,
+            @RequestParam(value = "year", required = false, defaultValue = "") String year  ){
+
+          if(year.equals("")){
+              year = Integer.toString(LocalDate.now().getYear());
+          }
+
+
+        apiService.setCorpFinanceInfo( corpCode, year , reprtCode );
         return ResponseEntity.ok("");
     }
 

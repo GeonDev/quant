@@ -380,8 +380,10 @@ public class ApiService {
                                     finance.setTotalAssets(value);
                                 }
                             }
+                            financeList.add(finance);
                         }
                     }
+
                     financeRepository.saveAll(financeList);
                 }
             }
