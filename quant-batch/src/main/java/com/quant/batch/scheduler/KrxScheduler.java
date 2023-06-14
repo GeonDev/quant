@@ -1,4 +1,4 @@
-package com.quant.api.scheduler;
+package com.quant.batch.scheduler;
 
 import com.quant.stock.service.ApiService;
 import lombok.RequiredArgsConstructor;
@@ -10,18 +10,17 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class KrxScheduler {
 
-    private final ApiService apiService;
 
     @Scheduled(cron = "${cron.krx.daily-info}")
     private void koreaStockInfoScheduler(){
-        apiService.getKrxDailyInfo();
-        apiService.getDartCorpCodeInfo();
-        apiService.setStockPriceAverage();
+
+
     }
 
     @Scheduled(cron = "${cron.krx.month-info}")
     private void koreaStockFinanceScheduler(){
-        apiService.getCorpFinanceInfo();
+
+
     }
 
 }

@@ -9,7 +9,7 @@ import java.time.LocalDate;
 
 @Entity
 @Data
-@Table(name = "TB_STOCK_PRICE_AVERAGE")
+@Table(name = "TB_STOCK_AVERAGE")
 public class StockAverage implements Serializable {
 
     @Id

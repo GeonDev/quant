@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS tb_corp_info (
+CREATE TABLE IF NOT EXISTS TB_CORP_INFO (
   corp_code varchar(11) NOT NULL,
   corp_name text,
   stock_code varchar(11) ,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS tb_corp_info (
 );
 
 
-CREATE TABLE IF NOT EXISTS tb_corp_finance (
+CREATE TABLE IF NOT EXISTS TB_CORP_FINANCE (
   finance_id BIGINT NOT NULL,
   rcept_no varchar(5),
   corp_code varchar(11) ,
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS tb_corp_finance (
 );
 
 
-CREATE TABLE IF NOT EXISTS tb_stock_price (
+CREATE TABLE IF NOT EXISTS TB_STOCK_PRICE (
   price_id BIGINT NOT NULL,
   stock_code varchar(11) ,
   market_code varchar(11) ,
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS tb_stock_price (
   PRIMARY KEY (price_id)
 );
 
-CREATE TABLE IF NOT EXISTS tb_stock_price_average (
+CREATE TABLE IF NOT EXISTS TB_STOCK_AVERAGE (
       stock_code varchar(11) NOT NULL,
       tar_dt date ,
       price_type varchar(11) ,

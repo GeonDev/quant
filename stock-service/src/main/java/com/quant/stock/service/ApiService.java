@@ -8,6 +8,7 @@ import com.quant.core.utils.CommonUtils;
 import com.quant.core.utils.DateUtils;
 import com.quant.stock.entity.CorpInfo;
 import com.quant.stock.entity.CorpFinance;
+import com.quant.stock.entity.StockAverage;
 import com.quant.stock.entity.StockPrice;
 import com.quant.stock.model.dart.DartBase;
 import com.quant.stock.model.dart.FinanceItem;
@@ -16,6 +17,7 @@ import com.quant.stock.model.enums.StockType;
 import com.quant.stock.model.enums.CorpState;
 import com.quant.stock.repository.CorpInfoRepository;
 import com.quant.stock.repository.CorpFinanceRepository;
+import com.quant.stock.repository.StockAverageRepository;
 import com.quant.stock.repository.StockPriceRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -25,6 +27,8 @@ import org.json.simple.parser.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -55,6 +59,8 @@ public class ApiService {
     private final CorpInfoRepository corpInfoRepository;
     private final StockPriceRepository stockPriceRepository;
     private final CorpFinanceRepository financeRepository;
+
+    private final StockAverageRepository stockAverageRepository;
 
     private final AsyncService asyncService;
 
@@ -417,18 +423,43 @@ public class ApiService {
 
     }
 
-    //주식의 가격 평균 배치(비동기)
+    //주식의 가격 평균 배치
     public void setStockPriceAverage(LocalDate targetDate) {
         List<CorpInfo> targetCorp = corpInfoRepository.findByState(CorpState.ACTIVE);
 
         for (CorpInfo corp : targetCorp) {
-            asyncService.asyncStockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY5);
-            asyncService.asyncStockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY20);
-            asyncService.asyncStockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY60);
-            asyncService.asyncStockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY120);
-            asyncService.asyncStockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY200);
-            asyncService.asyncStockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY240);
+            stockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY5);
+            stockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY20);
+            stockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY60);
+            stockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY120);
+            stockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY200);
+            stockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY240);
         }
+    }
+
+    public void stockPriceAverage (String stockCode, LocalDate targetDate, PriceType priceType){
+
+        PageRequest pageRequest = PageRequest.of(0, priceType.getValue(), Sort.by("BAS_DT").descending());
+        List<StockPrice> priceList = stockPriceRepository.findByStockCodeAndBasDtBefore(stockCode, targetDate, pageRequest);
+
+
+        StockAverage average = new StockAverage();
+        average.setStockCode(stockCode);
+        average.setTarDt(targetDate);
+        average.setPriceType(priceType);
+
+        Integer totalPrice = 0;
+        if(priceList.size() == priceType.getValue()){
+            for(StockPrice price : priceList ){
+                totalPrice += price.getEndPrice();
+            }
+            average.setPrice(totalPrice/priceType.getValue());
+        }else{
+            //기간 개수가 모자르다면 평균을 0으로 처리
+            average.setPrice(0);
+        }
+
+        stockAverageRepository.save(average);
     }
 
 }

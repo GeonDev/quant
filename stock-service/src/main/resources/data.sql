@@ -1,4 +1,4 @@
-INSERT INTO tb_corp_code (corp_code, corp_name, stock_code, corp_state)
+INSERT INTO TB_CORP_INFO (corp_code, corp_name, stock_code, corp_state)
 VALUES
 	('00100258','에스마크','030270','Y'),
 	('00100601','강원에너지','114190','Y'),
