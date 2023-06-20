@@ -1,6 +1,5 @@
 package com.quant.batch.scheduler;
 
-import com.quant.stock.service.ApiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;

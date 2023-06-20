@@ -52,17 +52,13 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class ApiService {
-
+public class StockService {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final CorpInfoRepository corpInfoRepository;
     private final StockPriceRepository stockPriceRepository;
     private final CorpFinanceRepository financeRepository;
-
     private final StockAverageRepository stockAverageRepository;
-
-    private final AsyncService asyncService;
 
     @Value("${signkey.data-go}")
     String apiKey;
@@ -291,7 +287,7 @@ public class ApiService {
         return node.getTextContent().trim();
     }
 
-
+    //회사 목록 전체의 재무재표 업데이트
     public void getCorpFinanceInfo() {
         List<CorpInfo> infoList = corpInfoRepository.findByState(CorpState.ACTIVE);
 
@@ -417,14 +413,12 @@ public class ApiService {
     }
 
 
-    public void setStockPriceAverage() {
-        LocalDate targetDate = LocalDate.now();
-        setStockPriceAverage(targetDate);
-
-    }
-
     //주식의 가격 평균 배치
     public void setStockPriceAverage(LocalDate targetDate) {
+        if(targetDate == null ){
+            targetDate = LocalDate.now();
+        }
+
         List<CorpInfo> targetCorp = corpInfoRepository.findByState(CorpState.ACTIVE);
 
         for (CorpInfo corp : targetCorp) {

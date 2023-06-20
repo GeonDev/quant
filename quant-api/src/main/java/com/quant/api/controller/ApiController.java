@@ -1,7 +1,8 @@
 package com.quant.api.controller;
 
+import com.quant.api.aspect.option.AllowAccessIp;
 import com.quant.core.utils.DateUtils;
-import com.quant.stock.service.ApiService;
+import com.quant.stock.service.StockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -12,23 +13,25 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 
+
+@AllowAccessIp
 @RestController
 @RequiredArgsConstructor
 public class ApiController {
 
-    private final ApiService apiService;
+    private final StockService stockService;
 
     @GetMapping(value = "daily", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getStockPrice(@RequestParam(value = "date", required = false, defaultValue = "") String date){
         LocalDate targetDate = DateUtils.toStringLocalDate(date);
 
-        apiService.getKrxDailyInfo(targetDate);
+        stockService.getKrxDailyInfo(targetDate);
         return ResponseEntity.ok("");
     }
 
     @GetMapping(value = "code", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getCorpCode( ){
-        apiService.getDartCorpCodeInfo();
+        stockService.getDartCorpCodeInfo();
         return ResponseEntity.ok("");
     }
 
@@ -41,8 +44,7 @@ public class ApiController {
               year = Integer.toString(LocalDate.now().getYear());
           }
 
-
-        apiService.setCorpFinanceInfo( corpCode, year , reprtCode );
+        stockService.setCorpFinanceInfo( corpCode, year , reprtCode );
         return ResponseEntity.ok("");
     }
 
@@ -50,7 +52,7 @@ public class ApiController {
     public ResponseEntity getAveragePrice(@RequestParam(value = "date", required = false, defaultValue = "") String date){
         LocalDate targetDate = DateUtils.toStringLocalDate(date);
 
-        apiService.setStockPriceAverage(targetDate);
+        stockService.setStockPriceAverage(targetDate);
         return ResponseEntity.ok("");
     }
 
