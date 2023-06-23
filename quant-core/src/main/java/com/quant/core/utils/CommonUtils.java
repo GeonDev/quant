@@ -1,5 +1,6 @@
 package com.quant.core.utils;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -51,4 +52,31 @@ public class CommonUtils {
         }
         Buffered_Output_Stream.close();
     }
+
+    public static String getRequestRemoteIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-FORWARDED-FOR");
+
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_CLIENT_IP");
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+
+        if (ip.contains(",")) {
+            String[] remoteIpParts = ip.split(",");
+            ip = remoteIpParts[0].trim();
+        }
+        return ip;
+    }
+
 }
