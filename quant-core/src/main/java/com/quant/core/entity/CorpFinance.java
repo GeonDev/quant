@@ -1,4 +1,4 @@
-package com.quant.stock.entity;
+package com.quant.core.entity;
 
 
 import lombok.Data;

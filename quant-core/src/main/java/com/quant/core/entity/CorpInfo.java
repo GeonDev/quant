@@ -1,8 +1,8 @@
-package com.quant.stock.entity;
+package com.quant.core.entity;
 
-import com.quant.stock.model.enums.CorpType;
-import com.quant.stock.model.enums.CorpState;
-import com.quant.stock.model.enums.IncomeState;
+import com.quant.core.enums.CorpState;
+import com.quant.core.enums.CorpType;
+import com.quant.core.enums.IncomeState;
 import lombok.*;
 
 import javax.persistence.*;

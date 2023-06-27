@@ -1,6 +1,6 @@
-package com.quant.stock.repository;
+package com.quant.core.repository;
 
-import com.quant.stock.entity.StockPrice;
+import com.quant.core.entity.StockPrice;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 

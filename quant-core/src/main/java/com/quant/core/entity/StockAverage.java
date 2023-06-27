@@ -1,6 +1,6 @@
-package com.quant.stock.entity;
+package com.quant.core.entity;
 
-import com.quant.stock.model.enums.PriceType;
+import com.quant.core.enums.PriceType;
 import lombok.Data;
 
 import javax.persistence.*;

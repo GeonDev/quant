@@ -1,7 +1,7 @@
-package com.quant.stock.entity;
+package com.quant.core.entity;
 
 import lombok.Data;
-import lombok.Generated;
+
 
 import javax.persistence.*;
 import java.time.LocalDate;

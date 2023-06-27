@@ -1,7 +1,8 @@
-package com.quant.stock.repository;
+package com.quant.core.repository;
 
-import com.quant.stock.entity.CorpInfo;
-import com.quant.stock.model.enums.CorpState;
+import com.quant.core.entity.CorpInfo;
+import com.quant.core.enums.CorpState;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;

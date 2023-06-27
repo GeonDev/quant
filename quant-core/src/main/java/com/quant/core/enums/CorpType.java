@@ -1,4 +1,4 @@
-package com.quant.stock.model.enums;
+package com.quant.core.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

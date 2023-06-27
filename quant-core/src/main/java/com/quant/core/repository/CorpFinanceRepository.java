@@ -1,6 +1,6 @@
-package com.quant.stock.repository;
+package com.quant.core.repository;
 
-import com.quant.stock.entity.CorpFinance;
+import com.quant.core.entity.CorpFinance;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
