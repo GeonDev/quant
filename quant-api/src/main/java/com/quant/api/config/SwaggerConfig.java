@@ -22,8 +22,8 @@ public class SwaggerConfig {
 
     @Bean
     public OpenAPI openAPI() {
-        Info info = new Info().title(" API")
-                .description("");
+        Info info = new Info().title("API")
+                .description("배치외 수동으로 데이터를 조회 갱신할때 사용하는 API");
 
         OpenAPI openAPI = new OpenAPI()
                 .info(info);

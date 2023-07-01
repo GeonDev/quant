@@ -21,7 +21,7 @@ public class ApiController {
 
     private final StockService stockService;
 
-    @GetMapping(value = "daily", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "price", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getStockPrice(@RequestParam(value = "date", required = false, defaultValue = "") String date){
         LocalDate targetDate = DateUtils.toStringLocalDate(date);
 
@@ -55,5 +55,12 @@ public class ApiController {
         stockService.setStockPriceAverage(targetDate);
         return ResponseEntity.ok("");
     }
+
+    @GetMapping(value = "average", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity getRecommendStock (@RequestParam(value = "date", required = false, defaultValue = "") String date){
+
+        return ResponseEntity.ok("");
+    }
+
 
 }
