@@ -18,6 +18,7 @@ public class StockAverage implements Serializable {
     //기준일
     LocalDate tarDt;
 
+    //평균 타입 (5일, 10일, 20일 등 )
     @Enumerated(EnumType.STRING)
     PriceType priceType;
 

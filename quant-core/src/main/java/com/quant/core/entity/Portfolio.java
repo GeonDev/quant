@@ -17,18 +17,17 @@ public class Portfolio {
 
     String userKey;
 
+    //매매, 매수 구분
     @Enumerated(EnumType.STRING)
     TradingType trading;
 
     //거래일
-    LocalDate tradingDate;
+    LocalDate tradingDt;
 
     //1주당 평균 가격
-    Integer averagePrice;
+    Integer average;
 
     //매매/매도 개수
     Integer stockCount;
-
-
     
 }

@@ -34,8 +34,10 @@ public class CorpInfo implements Serializable {
     @Enumerated(EnumType.STRING)
     CorpType corpType;
 
+    //기타 메모
     String message;
 
+    //검사일 -> 상장 폐지인지 확인
     LocalDate checkDt;
 
 }

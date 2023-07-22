@@ -16,13 +16,15 @@ public class CorpFinance implements Serializable {
     @GeneratedValue(strategy= GenerationType.IDENTITY)
     Long financeId;
 
+    //분기코드
     String rceptNo;
 
     String corpCode;
 
     String stockCode;
 
-    String years;
+    //연도 4자리
+    String yearCode;
 
     LocalDate startDt;
 

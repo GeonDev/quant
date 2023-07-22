@@ -7,8 +7,8 @@ import java.util.List;
 
 public interface CorpFinanceRepository extends JpaRepository<CorpFinance, Long> {
 
-    CorpFinance findByCorpCodeAndRceptNoAndYears(String corpCode, String rceptNo, String year);
+    CorpFinance findByCorpCodeAndRceptNoAndYearCode(String corpCode, String rceptNo, String year);
 
-    List<CorpFinance> findByRceptNoAndYears(String rceptNo, String year);
+    List<CorpFinance> findByRceptNoAndYearCode(String rceptNo, String year);
 
 }

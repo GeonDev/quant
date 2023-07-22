@@ -83,7 +83,8 @@ CREATE TABLE IF NOT EXISTS TB_CORP_INFO (
   corp_code varchar(11) NOT NULL,
   corp_name text,
   stock_code varchar(11) ,
-  state varchar(5) DEFAULT 'Y' COMMENT 'Y : 정상 , N : 거래정지 또는 상장 폐지',
+  income varchar(10) ,
+  state varchar(10) DEFAULT 'ACTIVE',
   corp_type varchar(11) ,
   message text ,
   check_dt date,
@@ -96,7 +97,7 @@ CREATE TABLE IF NOT EXISTS TB_CORP_FINANCE (
   rcept_no varchar(5),
   corp_code varchar(11) ,
   stock_code varchar(11) ,
-  years varchar(4),
+  year_code varchar(4),
   start_dt date ,
   end_dt date ,
   capital bigint,
@@ -115,7 +116,7 @@ CREATE TABLE IF NOT EXISTS TB_CORP_FINANCE (
 
 
 CREATE TABLE IF NOT EXISTS TB_STOCK_PRICE (
-  price_id BIGINT NOT NULL,
+  price_id bigint NOT NULL,
   stock_code varchar(11) ,
   market_code varchar(11) ,
   bas_dt date ,
@@ -137,4 +138,15 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_AVERAGE (
       price_type varchar(11) ,
       price int ,
       PRIMARY KEY (stock_code)
+);
+
+
+CREATE TABLE IF NOT EXISTS TB_STOCK_PORTFOLIO (
+  portfolio_id bigint NOT NULL,
+  user_key varchar(11) ,
+  trading_type varchar(11) ,
+  trading_Dt date ,
+  average int ,
+  stock_count int ,
+  PRIMARY KEY (portfolio_id)
 );

@@ -71,9 +71,6 @@ public class StockService {
     String filePath;
 
 
-    public void getKrxDailyInfo() {
-        getKrxDailyInfo(LocalDate.now());
-    }
 
     //주식 시장 활성일 체크 -> 활성일 일 경우 주식 시세 받기
     public void getKrxDailyInfo(LocalDate targetDate) {
@@ -248,7 +245,6 @@ public class StockService {
                 if (corp != null) {
                     //상장된 회사 코드만 저장
                     if (getValue("stock_code", corp) != null && StringUtils.isNotEmpty(getValue("stock_code", corp))) {
-
                         //스팩 종목 제외
                         if (!getValue("corp_name", corp).contains("스팩") && !getValue("corp_name", corp).contains("기업인수목적")) {
                             CorpInfo code = corpInfoRepository.findById(getValue("corp_code", corp)).orElseGet(() -> new CorpInfo().builder()
@@ -289,7 +285,7 @@ public class StockService {
     }
 
     //회사 목록 전체의 재무재표 업데이트
-    public void getCorpFinanceInfo() {
+    public void setCorpFinanceInfo() {
         List<CorpInfo> infoList = corpInfoRepository.findByState(CorpState.ACTIVE);
 
         String year = Integer.toString(LocalDate.now().getYear());
@@ -338,7 +334,7 @@ public class StockService {
 
             if (response.getStatus().equals("000")) {
 
-                if (financeRepository.findByCorpCodeAndRceptNoAndYears(corpCode, reprtCode, year) == null) {
+                if (financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, reprtCode, year) == null) {
 
                     List<CorpFinance> financeList = null;
 
@@ -348,7 +344,7 @@ public class StockService {
                     CorpFinance finance = new CorpFinance();
 
                     finance.setRceptNo(financeSrcList.get(0).getRcept_no());
-                    finance.setYears(year);
+                    finance.setYearCode(year);
                     finance.setStockCode(financeSrcList.get(0).getStock_code());
                     finance.setCorpCode(financeSrcList.get(0).getCorp_code());
 
@@ -399,7 +395,7 @@ public class StockService {
 
     public void setFinanceIndicators(String year, String reprtCode){
 
-        List<CorpFinance> financeList = financeRepository.findByRceptNoAndYears(reprtCode, year);
+        List<CorpFinance> financeList = financeRepository.findByRceptNoAndYearCode(reprtCode, year);
 
         for (CorpFinance finance : financeList ){
             //분기 데이터의 마지막일자 시장가 불러오기

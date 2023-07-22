@@ -8,7 +8,7 @@ import lombok.Getter;
 public enum CorpState {
     ACTIVE("활성"),
     HALT("거래정지"),
-    caution("투자주의"),
+    CAUTION("투자주의"),
     DEL("상장폐지");
 
     private String desc;
