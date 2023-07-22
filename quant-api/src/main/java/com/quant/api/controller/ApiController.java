@@ -35,7 +35,7 @@ public class ApiController {
         LocalDate targetDate = LocalDate.now();
 
         if (StringUtils.hasText(date)) {
-            targetDate = DateUtils.toStringLocalDate(date);
+            targetDate = DateUtils.toLocalDate(date);
         }
 
         stockService.getKrxDailyInfo(targetDate);

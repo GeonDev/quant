@@ -50,6 +50,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -246,7 +247,10 @@ public class StockService {
                     //상장된 회사 코드만 저장
                     if (getValue("stock_code", corp) != null && StringUtils.isNotEmpty(getValue("stock_code", corp))) {
                         //스팩 종목 제외
-                        if (!getValue("corp_name", corp).contains("스팩") && !getValue("corp_name", corp).contains("기업인수목적")) {
+                        if (!getValue("corp_name", corp).contains("스팩") &&
+                                !getValue("corp_name", corp).contains("기업인수목적") &&
+                                !getValue("corp_name", corp).contains("투자회사")) {
+
                             CorpInfo code = corpInfoRepository.findById(getValue("corp_code", corp)).orElseGet(() -> new CorpInfo().builder()
                                     .corpCode(getValue("corp_code", corp))
                                     .stockCode(getValue("stock_code", corp))
@@ -291,21 +295,31 @@ public class StockService {
         String year = Integer.toString(LocalDate.now().getYear());
 
         for (CorpInfo info : infoList) {
-            //1분기 보고서
-            setCorpFinanceInfo(info.getCorpCode(), year, "11013");
-            setFinanceIndicators(year, "11013");
 
-            //반기 보고서
-            setCorpFinanceInfo(info.getCorpCode(), year, "11012");
-            setFinanceIndicators(year, "11012");
+            try {
+                //1분기 보고서
+                setCorpFinanceInfo(info.getCorpCode(), year, "11013");
+                setFinanceIndicators(year, "11013");
 
-            //3분기 보고서
-            setCorpFinanceInfo(info.getCorpCode(), year, "11014");
-            setFinanceIndicators(year, "11014");
+                //반기 보고서
+                setCorpFinanceInfo(info.getCorpCode(), year, "11012");
+                setFinanceIndicators(year, "11012");
 
-            //사업 보고서
-            setCorpFinanceInfo(info.getCorpCode(), year, "11011");
-            setFinanceIndicators(year, "11011");
+                //3분기 보고서
+                setCorpFinanceInfo(info.getCorpCode(), year, "11014");
+                setFinanceIndicators(year, "11014");
+
+                //사업 보고서
+                setCorpFinanceInfo(info.getCorpCode(), year, "11011");
+                setFinanceIndicators(year, "11011");
+
+                //오픈 다트 정책상 초당 16건 이하의 요청만 허용함으로 0.3초(초당 12회) 슬립추가
+                TimeUnit.MICROSECONDS.sleep(300);
+
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+
         }
     }
 
@@ -322,6 +336,8 @@ public class StockService {
                 .queryParam("bsns_year", year)
                 .queryParam("reprt_code", reprtCode)
                 .build();
+
+        logger.debug("DART URL : {}",  uri);
 
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);

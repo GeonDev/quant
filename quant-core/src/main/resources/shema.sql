@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS TB_CORP_INFO (
 
 
 CREATE TABLE IF NOT EXISTS TB_CORP_FINANCE (
-  finance_id BIGINT NOT NULL,
+  finance_id bigint NOT NULL AUTO_INCREMENT,
   rcept_no varchar(5),
   corp_code varchar(11) ,
   stock_code varchar(11) ,
@@ -116,7 +116,7 @@ CREATE TABLE IF NOT EXISTS TB_CORP_FINANCE (
 
 
 CREATE TABLE IF NOT EXISTS TB_STOCK_PRICE (
-  price_id bigint NOT NULL,
+  price_id bigint NOT NULL AUTO_INCREMENT,
   stock_code varchar(11) ,
   market_code varchar(11) ,
   bas_dt date ,
@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_AVERAGE (
 
 
 CREATE TABLE IF NOT EXISTS TB_STOCK_PORTFOLIO (
-  portfolio_id bigint NOT NULL,
+  portfolio_id bigint NOT NULL AUTO_INCREMENT,
   user_key varchar(11) ,
   trading_type varchar(11) ,
   trading_Dt date ,
