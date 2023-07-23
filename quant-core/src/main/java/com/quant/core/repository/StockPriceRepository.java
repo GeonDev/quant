@@ -10,6 +10,6 @@ import java.util.List;
 public interface StockPriceRepository extends JpaRepository<StockPrice, Long> {
     List<StockPrice> findByStockCodeAndBasDtBefore(String code, LocalDate date, Pageable page);
 
-    StockPrice findTopByStockCodeAndBasDtBeforeOrderByBasDtDesc(String code, LocalDate date);
+    StockPrice findTopByStockCodeAndBasDt(String code, LocalDate date);
 
 }

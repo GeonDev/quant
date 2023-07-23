@@ -70,8 +70,7 @@ public class StockService {
     String filePath;
 
 
-
-    public String setUserInfo(String email){
+    public String setUserInfo(String email) {
         UserInfo info = UserInfo.builder()
                 .email(email)
                 .build();
@@ -266,7 +265,7 @@ public class StockService {
                                 !getValue("corp_name", corp).contains("펀드") &&
                                 !getValue("corp_name", corp).toLowerCase(Locale.ROOT).contains("llc") &&
                                 !getValue("corp_name", corp).toLowerCase(Locale.ROOT).contains("limited") &&
-                                !getValue("corp_name", corp).toLowerCase(Locale.ROOT).contains ("ltd") &&
+                                !getValue("corp_name", corp).toLowerCase(Locale.ROOT).contains("ltd") &&
                                 !getValue("corp_name", corp).toLowerCase(Locale.ROOT).contains("fund")) {
 
                             CorpInfo code = corpInfoRepository.findById(getValue("corp_code", corp)).orElseGet(() -> new CorpInfo().builder()
@@ -317,24 +316,20 @@ public class StockService {
             try {
                 //1분기 보고서
                 setCorpFinanceInfo(info.getCorpCode(), year, QuarterCode.Q1);
-                setFinanceIndicators(year, QuarterCode.Q1);
 
                 //반기 보고서
                 setCorpFinanceInfo(info.getCorpCode(), year, QuarterCode.Q2);
-                setFinanceIndicators(year, QuarterCode.Q2);
 
                 //3분기 보고서
                 setCorpFinanceInfo(info.getCorpCode(), year, QuarterCode.Q3);
-                setFinanceIndicators(year, QuarterCode.Q3);
 
                 //사업 보고서
                 setCorpFinanceInfo(info.getCorpCode(), year, QuarterCode.Q4);
-                setFinanceIndicators(year, QuarterCode.Q4);
 
                 //오픈 다트 정책상 초당 16건 이하의 요청만 허용함으로 0.3초(초당 12회) 슬립추가
                 TimeUnit.MICROSECONDS.sleep(300);
 
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
 
@@ -356,7 +351,7 @@ public class StockService {
                 .queryParam("reprt_code", quarter.getCode())
                 .build();
 
-        logger.debug("DART URL : {}",  uri);
+        logger.debug("DART URL : {}", uri);
 
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
@@ -415,23 +410,11 @@ public class StockService {
                                 }
                             }
 
-                            //전년도 재무정보
-                            CorpFinance byFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getCode(), String.valueOf(Integer.parseInt(year)-1));
-                            Double yoy = ((finance.getRevenue().doubleValue() - byFinance.getRevenue().doubleValue()) - 1.0) * 100;
-                            finance.setYOY(yoy);
+                            //YOY, QoQ 계산
+                            setFinanceRatio(corpCode, year, quarter, finance);
 
-                            //전분기 재무정보 가지고 오기
-                            if(quarter.equals(QuarterCode.Q1) ){
-                                //전분기 재무정보 (1분기 값은 작년정보)
-                                CorpFinance bqFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getBefore(), String.valueOf(Integer.parseInt(year)-1));
-                                Double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue()) - 1.0) * 100;
-                                finance.setQOQ(qoq);
-                            }else {
-                                //전분기 재무정보
-                                CorpFinance bqFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getBefore(), year);
-                                Double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue()) - 1.0) * 100;
-                                finance.setQOQ(qoq);
-                            }
+                            //PSR PER 계산
+                            setFinanceIndicators(year, quarter, finance);
 
                             financeList.add(finance);
                         }
@@ -446,28 +429,39 @@ public class StockService {
         }
     }
 
+    private void setFinanceRatio(String corpCode, String year, QuarterCode quarter, CorpFinance finance) {
+        //전년도 재무정보
+        CorpFinance byFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getCode(), String.valueOf(Integer.parseInt(year) - 1));
+        Double yoy = ((finance.getRevenue().doubleValue() - byFinance.getRevenue().doubleValue()) - 1.0) * 100;
+        finance.setYOY(yoy);
 
-    @Transactional
-    public void setFinanceIndicators(String year, QuarterCode quarter){
-
-        List<CorpFinance> financeList = financeRepository.findByRceptNoAndYearCode(quarter.getCode(), year);
-
-        for (CorpFinance finance : financeList ){
-            //분기 데이터의 마지막일자 시장가 불러오기
-            StockPrice nowPrice = stockPriceRepository.findTopByStockCodeAndBasDtBeforeOrderByBasDtDesc(finance.getStockCode(), finance.getEndDt());
-
-            finance.setPSR( nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue());
-            finance.setPBR( nowPrice.getMarketTotalAmt().doubleValue() / finance.getTotalEquity().doubleValue());
-            finance.setPER( nowPrice.getMarketTotalAmt().doubleValue() / finance.getNetIncome().doubleValue());
+        //전분기 재무정보 가지고 오기
+        if (quarter.equals(QuarterCode.Q1)) {
+            //전분기 재무정보 (1분기 값은 작년정보)
+            CorpFinance bqFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getBefore(), String.valueOf(Integer.parseInt(year) - 1));
+            Double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue()) - 1.0) * 100;
+            finance.setQOQ(qoq);
+        } else {
+            //전분기 재무정보
+            CorpFinance bqFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getBefore(), year);
+            Double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue()) - 1.0) * 100;
+            finance.setQOQ(qoq);
         }
+    }
 
-        financeRepository.saveAll(financeList);
+    public void setFinanceIndicators(String year, QuarterCode quarter, CorpFinance finance) {
+        //분기 데이터의 마지막일자 시장가 불러오기
+        StockPrice nowPrice = stockPriceRepository.findTopByStockCodeAndBasDt(finance.getStockCode(), finance.getEndDt());
+
+        finance.setPSR(nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue());
+        finance.setPBR(nowPrice.getMarketTotalAmt().doubleValue() / finance.getTotalEquity().doubleValue());
+        finance.setPER(nowPrice.getMarketTotalAmt().doubleValue() / finance.getNetIncome().doubleValue());
     }
 
 
     //주식의 가격 평균 배치
     public void setStockPriceAverage(LocalDate targetDate) {
-        if(targetDate == null ){
+        if (targetDate == null) {
             targetDate = LocalDate.now();
         }
 
@@ -483,7 +477,7 @@ public class StockService {
     }
 
     @Transactional
-    public void stockPriceAverage (String stockCode, LocalDate targetDate, PriceType priceType){
+    public void stockPriceAverage(String stockCode, LocalDate targetDate, PriceType priceType) {
 
         PageRequest pageRequest = PageRequest.of(0, priceType.getValue(), Sort.by("BAS_DT").descending());
         List<StockPrice> priceList = stockPriceRepository.findByStockCodeAndBasDtBefore(stockCode, targetDate, pageRequest);
@@ -495,12 +489,12 @@ public class StockService {
         average.setPriceType(priceType);
 
         Integer totalPrice = 0;
-        if(priceList.size() == priceType.getValue()){
-            for(StockPrice price : priceList ){
+        if (priceList.size() == priceType.getValue()) {
+            for (StockPrice price : priceList) {
                 totalPrice += price.getEndPrice();
             }
-            average.setPrice(totalPrice/priceType.getValue());
-        }else{
+            average.setPrice(totalPrice / priceType.getValue());
+        } else {
             //기간 개수가 모자르다면 평균을 0으로 처리
             average.setPrice(0);
         }
