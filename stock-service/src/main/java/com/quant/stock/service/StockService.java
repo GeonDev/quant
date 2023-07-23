@@ -21,7 +21,6 @@ import com.quant.core.repository.CorpFinanceRepository;
 import com.quant.core.repository.StockAverageRepository;
 import com.quant.core.repository.StockPriceRepository;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -32,6 +31,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -41,6 +41,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 
+import javax.transaction.Transactional;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
@@ -50,6 +51,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -244,12 +246,23 @@ public class StockService {
             for (int i = 0; i < corpList.getLength(); i++) {
                 Element corp = (Element) corpList.item(i);
                 if (corp != null) {
-                    //상장된 회사 코드만 저장
-                    if (getValue("stock_code", corp) != null && StringUtils.isNotEmpty(getValue("stock_code", corp))) {
-                        //스팩 종목 제외
+                    //상장된 회사만 저장
+                    if (getValue("stock_code", corp) != null && StringUtils.hasText(getValue("stock_code", corp))) {
+                        //스팩, 투자회사등 제외
                         if (!getValue("corp_name", corp).contains("스팩") &&
-                                !getValue("corp_name", corp).contains("기업인수목적") &&
-                                !getValue("corp_name", corp).contains("투자회사")) {
+                                !getValue("corp_name", corp).contains("기업인수") &&
+                                !getValue("corp_name", corp).contains("투자회사") &&
+                                !getValue("corp_name", corp).contains("인베스트먼트") &&
+                                !getValue("corp_name", corp).contains("매니지먼트") &&
+                                !getValue("corp_name", corp).contains("유한회사") &&
+                                !getValue("corp_name", corp).contains("유한공사") &&
+                                !getValue("corp_name", corp).contains("유동화전문") &&
+                                !getValue("corp_name", corp).contains("리미티드") &&
+                                !getValue("corp_name", corp).contains("펀드") &&
+                                !getValue("corp_name", corp).toLowerCase(Locale.ROOT).contains("llc") &&
+                                !getValue("corp_name", corp).toLowerCase(Locale.ROOT).contains("limited") &&
+                                !getValue("corp_name", corp).toLowerCase(Locale.ROOT).contains ("ltd") &&
+                                !getValue("corp_name", corp).toLowerCase(Locale.ROOT).contains("fund")) {
 
                             CorpInfo code = corpInfoRepository.findById(getValue("corp_code", corp)).orElseGet(() -> new CorpInfo().builder()
                                     .corpCode(getValue("corp_code", corp))
@@ -325,6 +338,7 @@ public class StockService {
 
 
     // 상장회사 재무 정보 다운로드
+    @Transactional
     public void setCorpFinanceInfo(String corpCode, String year, String reprtCode) {
         UriComponents uri = UriComponentsBuilder
                 .newInstance()
@@ -409,6 +423,7 @@ public class StockService {
     }
 
 
+    @Transactional
     public void setFinanceIndicators(String year, String reprtCode){
 
         List<CorpFinance> financeList = financeRepository.findByRceptNoAndYearCode(reprtCode, year);
@@ -440,10 +455,10 @@ public class StockService {
             stockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY60);
             stockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY120);
             stockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY200);
-            stockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY240);
         }
     }
 
+    @Transactional
     public void stockPriceAverage (String stockCode, LocalDate targetDate, PriceType priceType){
 
         PageRequest pageRequest = PageRequest.of(0, priceType.getValue(), Sort.by("BAS_DT").descending());

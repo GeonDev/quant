@@ -1,6 +1,8 @@
 package com.quant.api.controller;
 
 import com.quant.api.aspect.option.AllowAccessIp;
+import com.quant.core.entity.UserInfo;
+import com.quant.core.repository.UserInfoRepository;
 import com.quant.core.utils.DateUtils;
 import com.quant.stock.service.StockService;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,8 @@ import java.time.LocalDate;
 public class ApiController {
 
     private final StockService stockService;
+
+    private final UserInfoRepository userInfoRepository;
 
 
     @GetMapping(value = "code", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -80,5 +84,12 @@ public class ApiController {
         return ResponseEntity.ok("");
     }
 
+    @GetMapping(value = "user", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity setUser() {
+        UserInfo d = new UserInfo();
+        userInfoRepository.save(d);
+
+        return ResponseEntity.ok("");
+    }
 
 }

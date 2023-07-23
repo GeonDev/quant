@@ -10,8 +10,7 @@ public enum PriceType {
     DAY20(20),
     DAY60(60),
     DAY120(120),
-    DAY200(200),
-    DAY240(240);
+    DAY200(200);
 
     private int value;
 
