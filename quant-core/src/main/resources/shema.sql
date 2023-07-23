@@ -108,9 +108,12 @@ CREATE TABLE IF NOT EXISTS TB_CORP_FINANCE (
   operating_profit bigint,
   net_income bigint,
   earned_surplus bigint,
-  PSR double,
-  PBR double,
-  PER double,
+  PSR double DEFAULT 0,
+  PBR double DEFAULT 0,
+  PER double DEFAULT 0,
+  YOY double DEFAULT 0,
+  QOQ double DEFAULT 0,
+  YTD double DEFAULT 0,
   PRIMARY KEY (finance_id)
 );
 
@@ -132,12 +135,13 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_PRICE (
   PRIMARY KEY (price_id)
 );
 
+
 CREATE TABLE IF NOT EXISTS TB_STOCK_AVERAGE (
-      stock_code varchar(11) NOT NULL,
-      tar_dt date ,
-      price_type varchar(11) ,
-      price int ,
-      PRIMARY KEY (stock_code)
+  stock_code varchar(11) NOT NULL,
+  tar_dt date ,
+  price_type varchar(11) ,
+  price int ,
+  PRIMARY KEY (stock_code)
 );
 
 
@@ -152,9 +156,8 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_PORTFOLIO (
 );
 
 
-CREATE TABLE IF NOT EXISTS TB_USER_INFO
-(
-    user_key    varchar(12) NOT NULL,
-    email   varchar(30),
-     PRIMARY KEY (user_key)
+CREATE TABLE IF NOT EXISTS TB_USER_INFO (
+    user_key varchar(12) NOT NULL,
+    email varchar(30),
+    PRIMARY KEY (user_key)
 )

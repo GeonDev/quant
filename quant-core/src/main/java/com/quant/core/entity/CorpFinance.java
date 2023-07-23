@@ -63,5 +63,11 @@ public class CorpFinance implements Serializable {
     // 시가총액 % 당기 순이익
     Double PER;
 
+    Double YOY;
+
+    Double QOQ;
+
+    Double YTD;
+
 
 }

@@ -1,8 +1,7 @@
 package com.quant.api.controller;
 
 import com.quant.api.aspect.option.AllowAccessIp;
-import com.quant.core.entity.UserInfo;
-import com.quant.core.repository.UserInfoRepository;
+import com.quant.core.enums.QuarterCode;
 import com.quant.core.utils.DateUtils;
 import com.quant.stock.service.StockService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +23,11 @@ public class ApiController {
 
     private final StockService stockService;
 
-    private final UserInfoRepository userInfoRepository;
+
+    @GetMapping(value = "user", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity setUser(@RequestParam(value = "email") String email) {
+        return ResponseEntity.ok("User key : " + stockService.setUserInfo(email));
+    }
 
 
     @GetMapping(value = "code", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -48,15 +51,14 @@ public class ApiController {
 
     @GetMapping(value = "fin", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getFinance(@RequestParam(value = "corpCode", required = false, defaultValue = "") String corpCode,
-                                     @RequestParam(value = "reprtCode", required = false, defaultValue = "") String reprtCode,
+                                     @RequestParam(value = "quarter", required = false, defaultValue = "") QuarterCode quarter,
                                      @RequestParam(value = "year", required = false, defaultValue = "") String year) {
-
         if (!StringUtils.hasText(year)) {
             year = Integer.toString(LocalDate.now().getYear());
         }
 
-        if(StringUtils.hasText(corpCode) && StringUtils.hasText(reprtCode) ){
-            stockService.setCorpFinanceInfo(corpCode, year, reprtCode);
+        if(StringUtils.hasText(corpCode) && StringUtils.hasText(quarter.name()) ){
+            stockService.setCorpFinanceInfo(corpCode, year, quarter);
         }else {
             //회사 목록 전체의 재무재표 업데이트
             stockService.setCorpFinanceInfo();
@@ -84,12 +86,5 @@ public class ApiController {
         return ResponseEntity.ok("");
     }
 
-    @GetMapping(value = "user", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity setUser() {
-        UserInfo d = new UserInfo();
-        userInfoRepository.save(d);
-
-        return ResponseEntity.ok("");
-    }
 
 }

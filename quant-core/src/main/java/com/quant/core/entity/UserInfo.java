@@ -1,5 +1,7 @@
 package com.quant.core.entity;
 
+import lombok.Builder;
+import lombok.Data;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
 
@@ -10,6 +12,8 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 @Entity
+@Builder
+@Data
 @Table(name = "TB_USER_INFO")
 public class UserInfo {
 

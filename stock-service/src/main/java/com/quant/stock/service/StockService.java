@@ -4,22 +4,17 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.core.consts.ApplicationConstants;
+import com.quant.core.entity.*;
 import com.quant.core.enums.CorpState;
+import com.quant.core.enums.QuarterCode;
 import com.quant.core.enums.PriceType;
 import com.quant.core.enums.StockType;
+import com.quant.core.repository.*;
 import com.quant.core.utils.CommonUtils;
 import com.quant.core.utils.DateUtils;
-import com.quant.core.entity.CorpInfo;
-import com.quant.core.entity.CorpFinance;
-import com.quant.core.entity.StockAverage;
-import com.quant.core.entity.StockPrice;
 import com.quant.stock.model.dart.DartBase;
 import com.quant.stock.model.dart.FinanceItem;
 
-import com.quant.core.repository.CorpInfoRepository;
-import com.quant.core.repository.CorpFinanceRepository;
-import com.quant.core.repository.StockAverageRepository;
-import com.quant.core.repository.StockPriceRepository;
 import lombok.RequiredArgsConstructor;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -59,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 public class StockService {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
+    private final UserInfoRepository userInfoRepository;
     private final CorpInfoRepository corpInfoRepository;
     private final StockPriceRepository stockPriceRepository;
     private final CorpFinanceRepository financeRepository;
@@ -73,6 +69,15 @@ public class StockService {
     @Value("${file.path}")
     String filePath;
 
+
+
+    public String setUserInfo(String email){
+        UserInfo info = UserInfo.builder()
+                .email(email)
+                .build();
+
+        return userInfoRepository.save(info).getUserKey();
+    }
 
 
     //주식 시장 활성일 체크 -> 활성일 일 경우 주식 시세 받기
@@ -311,20 +316,20 @@ public class StockService {
 
             try {
                 //1분기 보고서
-                setCorpFinanceInfo(info.getCorpCode(), year, "11013");
-                setFinanceIndicators(year, "11013");
+                setCorpFinanceInfo(info.getCorpCode(), year, QuarterCode.Q1);
+                setFinanceIndicators(year, QuarterCode.Q1);
 
                 //반기 보고서
-                setCorpFinanceInfo(info.getCorpCode(), year, "11012");
-                setFinanceIndicators(year, "11012");
+                setCorpFinanceInfo(info.getCorpCode(), year, QuarterCode.Q2);
+                setFinanceIndicators(year, QuarterCode.Q2);
 
                 //3분기 보고서
-                setCorpFinanceInfo(info.getCorpCode(), year, "11014");
-                setFinanceIndicators(year, "11014");
+                setCorpFinanceInfo(info.getCorpCode(), year, QuarterCode.Q3);
+                setFinanceIndicators(year, QuarterCode.Q3);
 
                 //사업 보고서
-                setCorpFinanceInfo(info.getCorpCode(), year, "11011");
-                setFinanceIndicators(year, "11011");
+                setCorpFinanceInfo(info.getCorpCode(), year, QuarterCode.Q4);
+                setFinanceIndicators(year, QuarterCode.Q4);
 
                 //오픈 다트 정책상 초당 16건 이하의 요청만 허용함으로 0.3초(초당 12회) 슬립추가
                 TimeUnit.MICROSECONDS.sleep(300);
@@ -339,7 +344,7 @@ public class StockService {
 
     // 상장회사 재무 정보 다운로드
     @Transactional
-    public void setCorpFinanceInfo(String corpCode, String year, String reprtCode) {
+    public void setCorpFinanceInfo(String corpCode, String year, QuarterCode quarter) {
         UriComponents uri = UriComponentsBuilder
                 .newInstance()
                 .scheme("https")
@@ -348,7 +353,7 @@ public class StockService {
                 .queryParam("crtfc_key", dartKey)
                 .queryParam("corp_code", corpCode)
                 .queryParam("bsns_year", year)
-                .queryParam("reprt_code", reprtCode)
+                .queryParam("reprt_code", quarter.getCode())
                 .build();
 
         logger.debug("DART URL : {}",  uri);
@@ -364,7 +369,7 @@ public class StockService {
 
             if (response.getStatus().equals("000")) {
 
-                if (financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, reprtCode, year) == null) {
+                if (financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getCode(), year) == null) {
 
                     List<CorpFinance> financeList = null;
 
@@ -409,6 +414,25 @@ public class StockService {
                                     finance.setTotalAssets(value);
                                 }
                             }
+
+                            //전년도 재무정보
+                            CorpFinance byFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getCode(), String.valueOf(Integer.parseInt(year)-1));
+                            Double yoy = ((finance.getRevenue().doubleValue() - byFinance.getRevenue().doubleValue()) - 1.0) * 100;
+                            finance.setYOY(yoy);
+
+                            //전분기 재무정보 가지고 오기
+                            if(quarter.equals(QuarterCode.Q1) ){
+                                //전분기 재무정보 (1분기 값은 작년정보)
+                                CorpFinance bqFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getBefore(), String.valueOf(Integer.parseInt(year)-1));
+                                Double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue()) - 1.0) * 100;
+                                finance.setQOQ(qoq);
+                            }else {
+                                //전분기 재무정보
+                                CorpFinance bqFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getBefore(), year);
+                                Double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue()) - 1.0) * 100;
+                                finance.setQOQ(qoq);
+                            }
+
                             financeList.add(finance);
                         }
                     }
@@ -424,9 +448,9 @@ public class StockService {
 
 
     @Transactional
-    public void setFinanceIndicators(String year, String reprtCode){
+    public void setFinanceIndicators(String year, QuarterCode quarter){
 
-        List<CorpFinance> financeList = financeRepository.findByRceptNoAndYearCode(reprtCode, year);
+        List<CorpFinance> financeList = financeRepository.findByRceptNoAndYearCode(quarter.getCode(), year);
 
         for (CorpFinance finance : financeList ){
             //분기 데이터의 마지막일자 시장가 불러오기
