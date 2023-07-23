@@ -412,9 +412,8 @@ public class StockService {
 
                             //YOY, QoQ 계산
                             setFinanceRatio(corpCode, year, quarter, finance);
-
                             //PSR PER 계산
-                            setFinanceIndicators(year, quarter, finance);
+                            setFinanceIndicators(finance);
 
                             financeList.add(finance);
                         }
@@ -432,30 +431,38 @@ public class StockService {
     private void setFinanceRatio(String corpCode, String year, QuarterCode quarter, CorpFinance finance) {
         //전년도 재무정보
         CorpFinance byFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getCode(), String.valueOf(Integer.parseInt(year) - 1));
-        Double yoy = ((finance.getRevenue().doubleValue() - byFinance.getRevenue().doubleValue()) - 1.0) * 100;
-        finance.setYOY(yoy);
+        if(byFinance != null){
+            Double yoy = ((finance.getRevenue().doubleValue() - byFinance.getRevenue().doubleValue()) - 1.0) * 100;
+            finance.setYOY(yoy);
+        }
 
         //전분기 재무정보 가지고 오기
         if (quarter.equals(QuarterCode.Q1)) {
             //전분기 재무정보 (1분기 값은 작년정보)
             CorpFinance bqFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getBefore(), String.valueOf(Integer.parseInt(year) - 1));
-            Double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue()) - 1.0) * 100;
-            finance.setQOQ(qoq);
+            if(bqFinance != null){
+                Double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue()) - 1.0) * 100;
+                finance.setQOQ(qoq);
+            }
         } else {
             //전분기 재무정보
             CorpFinance bqFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getBefore(), year);
-            Double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue()) - 1.0) * 100;
-            finance.setQOQ(qoq);
+            if(bqFinance != null){
+                Double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue()) - 1.0) * 100;
+                finance.setQOQ(qoq);
+            }
         }
     }
 
-    public void setFinanceIndicators(String year, QuarterCode quarter, CorpFinance finance) {
+    public void setFinanceIndicators(CorpFinance finance) {
         //분기 데이터의 마지막일자 시장가 불러오기
         StockPrice nowPrice = stockPriceRepository.findTopByStockCodeAndBasDt(finance.getStockCode(), finance.getEndDt());
 
-        finance.setPSR(nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue());
-        finance.setPBR(nowPrice.getMarketTotalAmt().doubleValue() / finance.getTotalEquity().doubleValue());
-        finance.setPER(nowPrice.getMarketTotalAmt().doubleValue() / finance.getNetIncome().doubleValue());
+        if(nowPrice != null){
+            finance.setPSR(nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue());
+            finance.setPBR(nowPrice.getMarketTotalAmt().doubleValue() / finance.getTotalEquity().doubleValue());
+            finance.setPER(nowPrice.getMarketTotalAmt().doubleValue() / finance.getNetIncome().doubleValue());
+        }
     }
 
 
