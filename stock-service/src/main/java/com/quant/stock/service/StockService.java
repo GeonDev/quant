@@ -326,8 +326,8 @@ public class StockService {
                 //사업 보고서
                 setCorpFinanceInfo(info.getCorpCode(), year, QuarterCode.Q4);
 
-                //오픈 다트 정책상 초당 16건 이하의 요청만 허용함으로 0.3초(초당 12회) 슬립추가
-                TimeUnit.MICROSECONDS.sleep(300);
+                //오픈 다트 정책상 초당 16건 이하의 요청만 허용함으로 0.5초 슬립추가
+                TimeUnit.MICROSECONDS.sleep(500);
 
             } catch (Exception e) {
                 e.printStackTrace();
