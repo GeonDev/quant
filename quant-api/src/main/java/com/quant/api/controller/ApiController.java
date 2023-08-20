@@ -51,19 +51,21 @@ public class ApiController {
 
     @GetMapping(value = "fin", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getFinance(@RequestParam(value = "corpCode", required = false, defaultValue = "") String corpCode,
-                                     @RequestParam(value = "quarter", required = false, defaultValue = "") QuarterCode quarter,
+                                     @RequestParam(value = "quarter", required = false) QuarterCode quarter,
                                      @RequestParam(value = "year", required = false, defaultValue = "") String year) {
         if (!StringUtils.hasText(year)) {
             year = Integer.toString(LocalDate.now().getYear());
         }
 
-        if(StringUtils.hasText(corpCode) && StringUtils.hasText(quarter.name()) ){
-            stockService.setCorpFinanceInfo(corpCode, year, quarter);
-        }else {
-            //회사 목록 전체의 재무재표 업데이트
-            stockService.setCorpFinanceInfo();
+        if(StringUtils.hasText(corpCode)){
+            if(quarter != null){
+                stockService.setSingleCorpFinanceInfo(corpCode, year, quarter);
+            }else {
+                stockService.setSingleCorpFinanceInfo(corpCode, year);
+            }
+        }else{
+            stockService.setMultiCorpFinanceInfo(year);
         }
-
 
         return ResponseEntity.ok("SET FINANCE");
     }

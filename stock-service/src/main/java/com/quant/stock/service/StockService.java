@@ -9,6 +9,7 @@ import com.quant.core.enums.CorpState;
 import com.quant.core.enums.QuarterCode;
 import com.quant.core.enums.PriceType;
 import com.quant.core.enums.StockType;
+import com.quant.core.mapping.CorpCodeMapper;
 import com.quant.core.repository.*;
 import com.quant.core.utils.CommonUtils;
 import com.quant.core.utils.DateUtils;
@@ -47,7 +48,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
+
 
 @Service
 @RequiredArgsConstructor
@@ -185,21 +186,24 @@ public class StockService {
                         JSONObject item = (JSONObject) itemList.get(i);
                         StockPrice price = new StockPrice();
 
-                        price.setStockCode(item.get("srtnCd").toString());
-                        price.setMarketCode(marketType);
-                        price.setBasDt(DateUtils.toLocalDate(basDt));
-                        price.setVolume(Integer.parseInt(item.get("trqu").toString()));
-                        price.setStartPrice(Integer.parseInt(item.get("mkp").toString()));
-                        price.setEndPrice(Integer.parseInt(item.get("clpr").toString()));
-                        price.setLowPrice(Integer.parseInt(item.get("lopr").toString()));
-                        price.setHighPrice(Integer.parseInt(item.get("hipr").toString()));
-                        price.setDailyRange(Double.parseDouble(item.get("vs").toString()));
-                        price.setDailyRatio(Double.parseDouble(item.get("fltRt").toString()));
-                        price.setStockTotalCnt(Long.parseLong(item.get("lstgStCnt").toString()));
-                        price.setMarketTotalAmt(Long.parseLong(item.get("mrktTotAmt").toString()));
+                        if(!item.get("itmsNm").toString().contains("스팩")){
+                            price.setStockCode(item.get("srtnCd").toString());
+                            price.setMarketCode(marketType);
+                            price.setBasDt(DateUtils.toLocalDate(basDt));
+                            price.setVolume(Integer.parseInt(item.get("trqu").toString()));
+                            price.setStartPrice(Integer.parseInt(item.get("mkp").toString()));
+                            price.setEndPrice(Integer.parseInt(item.get("clpr").toString()));
+                            price.setLowPrice(Integer.parseInt(item.get("lopr").toString()));
+                            price.setHighPrice(Integer.parseInt(item.get("hipr").toString()));
+                            price.setDailyRange(Double.parseDouble(item.get("vs").toString()));
+                            price.setDailyRatio(Double.parseDouble(item.get("fltRt").toString()));
+                            price.setStockTotalCnt(Long.parseLong(item.get("lstgStCnt").toString()));
+                            price.setMarketTotalAmt(Long.parseLong(item.get("mrktTotAmt").toString()));
 
-                        stockPriceRepository.save(price);
-                        currentCount += 1;
+                            stockPriceRepository.save(price);
+                            currentCount += 1;
+                        }
+
                     }
                     getStockPrice(marketType, basDt, pageNum + 1, totalCount, currentCount);
                 }
@@ -305,53 +309,116 @@ public class StockService {
         return node.getTextContent().trim();
     }
 
-    //회사 목록 전체의 재무재표 업데이트
-    public void setCorpFinanceInfo() {
-        List<CorpInfo> infoList = corpInfoRepository.findByState(CorpState.ACTIVE);
 
-        String year = Integer.toString(LocalDate.now().getYear());
-
-        for (CorpInfo info : infoList) {
-
-            try {
-                //1분기 보고서
-                setCorpFinanceInfo(info.getCorpCode(), year, QuarterCode.Q1);
-
-                //반기 보고서
-                setCorpFinanceInfo(info.getCorpCode(), year, QuarterCode.Q2);
-
-                //3분기 보고서
-                setCorpFinanceInfo(info.getCorpCode(), year, QuarterCode.Q3);
-
-                //사업 보고서
-                setCorpFinanceInfo(info.getCorpCode(), year, QuarterCode.Q4);
-
-                //오픈 다트 정책상 초당 16건 이하의 요청만 허용함으로 0.5초 슬립추가
-                TimeUnit.MICROSECONDS.sleep(500);
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
+    @Transactional
+    public void setMultiCorpFinanceInfo(String year) {
+        // 15년 이전 데이터는 지원 안함
+        if(Integer.parseInt(year) < 2015){
+            return;
         }
+
+        setMultiCorpFinanceInfo(year,  QuarterCode.Q1);
+        setMultiCorpFinanceInfo( year,  QuarterCode.Q2);
+        setMultiCorpFinanceInfo( year,  QuarterCode.Q3);
+        setMultiCorpFinanceInfo( year,  QuarterCode.Q4);
     }
 
+    //회사 목록 전체의 재무재표 업데이트
+    public void setMultiCorpFinanceInfo(String year, QuarterCode quarter) {
+        List<CorpCodeMapper> infoList = corpInfoRepository.findByState(CorpState.ACTIVE);
 
-    // 상장회사 재무 정보 다운로드
-    @Transactional
-    public void setCorpFinanceInfo(String corpCode, String year, QuarterCode quarter) {
+        if(!StringUtils.hasText(year)){
+            year = Integer.toString(LocalDate.now().getYear());
+        }
+
+        if(Integer.parseInt(year) < 2015){
+            return;
+        }
+
+        StringBuffer sb = new StringBuffer();
+
+        for (CorpCodeMapper corpCode : infoList) {
+            sb.append(corpCode.getCorpCode());
+            sb.append(",");
+        }
+
+        String codeList = sb.substring(sb.lastIndexOf(","));
+
         UriComponents uri = UriComponentsBuilder
                 .newInstance()
                 .scheme("https")
                 .host(ApplicationConstants.DART_API_URL)
-                .path(ApplicationConstants.DART_STOCK_FINANCE_URI)
+                .path(ApplicationConstants.DART_STOCK_FINANCE_MULTI_URI)
+                .queryParam("crtfc_key", dartKey)
+                .queryParam("corp_code", codeList)
+                .queryParam("bsns_year", year)
+                .queryParam("reprt_code", quarter.getCode())
+                .build();
+
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
+
+        try {
+
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
+            mapper.enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES);
+            DartBase<FinanceItem> response = mapper.readValue(result.getBody(), DartBase.class);
+
+            if (response.getStatus().equals("000")) {
+                List<CorpFinance> financeList = null;
+                List<FinanceItem> financeOrigin = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {});
+
+                for (CorpCodeMapper corpCode : infoList) {
+                    financeList.add(setFinanceInfo(corpCode.getCorpCode(), year, quarter,  setFinanceParser(financeOrigin,corpCode.getCorpCode())));
+                }
+
+                financeRepository.saveAll(financeList);
+            }
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+
+    //단일 상장회사 재무 정보 다운로드
+    @Transactional
+    public void setSingleCorpFinanceInfo(String corpCode, String year) {
+
+        // 15년 이전 데이터는 지원 안함
+        if(Integer.parseInt(year) < 2015){
+            return;
+        }
+
+        setSingleCorpFinanceInfo(corpCode, year,  QuarterCode.Q1);
+        setSingleCorpFinanceInfo(corpCode, year,  QuarterCode.Q2);
+        setSingleCorpFinanceInfo(corpCode, year,  QuarterCode.Q3);
+        setSingleCorpFinanceInfo(corpCode, year,  QuarterCode.Q4);
+    }
+
+
+    //단일 상장회사 재무 정보 다운로드
+    @Transactional
+    public void setSingleCorpFinanceInfo(String corpCode, String year, QuarterCode quarter) {
+
+        // 15년 이전 데이터는 지원 안함
+       if(Integer.parseInt(year) < 2015){
+            return;
+        }
+
+        UriComponents uri = UriComponentsBuilder
+                .newInstance()
+                .scheme("https")
+                .host(ApplicationConstants.DART_API_URL)
+                .path(ApplicationConstants.DART_STOCK_FINANCE_SINGLE_URI)
                 .queryParam("crtfc_key", dartKey)
                 .queryParam("corp_code", corpCode)
                 .queryParam("bsns_year", year)
                 .queryParam("reprt_code", quarter.getCode())
                 .build();
-
-        logger.debug("DART URL : {}", uri);
 
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
@@ -364,60 +431,13 @@ public class StockService {
 
             if (response.getStatus().equals("000")) {
 
+                //같은 기간 데이터가 있는지 확인
                 if (financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getCode(), year) == null) {
 
                     List<CorpFinance> financeList = null;
+                    List<FinanceItem> financeSrcList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {});
 
-                    List<FinanceItem> financeSrcList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {
-                    });
-
-                    CorpFinance finance = new CorpFinance();
-
-                    finance.setRceptNo(financeSrcList.get(0).getRcept_no());
-                    finance.setYearCode(year);
-                    finance.setStockCode(financeSrcList.get(0).getStock_code());
-                    finance.setCorpCode(financeSrcList.get(0).getCorp_code());
-
-
-                    for (FinanceItem item : financeSrcList) {
-                        if (item.getFs_div().equals("OFS")) {
-                            Long value = Long.parseLong(item.getThstrm_amount().replace(",", ""));
-
-                            if (item.getSj_div().equals("IS")) {
-                                if (item.getAccount_nm().equals("매출액")) {
-                                    finance.setRevenue(value);
-
-                                    String[] data = item.getThstrm_dt().replace(".", "").split(" ~ ");
-                                    finance.setStartDt(DateUtils.toLocalDate(data[0]));
-                                    finance.setEndDt(DateUtils.toLocalDate(data[1]));
-
-                                } else if (item.getAccount_nm().equals("영업이익")) {
-                                    finance.setOperatingProfit(value);
-                                } else if (item.getAccount_nm().equals("당기순이익")) {
-                                    finance.setNetIncome(value);
-                                }
-                            } else if (item.getSj_div().equals("BS")) {
-                                if (item.getAccount_nm().equals("부채총계")) {
-                                    finance.setTotalDebt(value);
-                                } else if (item.getAccount_nm().equals("자본금")) {
-                                    finance.setCapital(value);
-                                } else if (item.getAccount_nm().equals("이익잉여금")) {
-                                    finance.setEarnedSurplus(value);
-                                } else if (item.getAccount_nm().equals("자본총계")) {
-                                    finance.setTotalEquity(value);
-                                } else if (item.getAccount_nm().equals("자산총계")) {
-                                    finance.setTotalAssets(value);
-                                }
-                            }
-
-                            //YOY, QoQ 계산
-                            setFinanceRatio(corpCode, year, quarter, finance);
-                            //PSR PER 계산
-                            setFinanceIndicators(finance);
-
-                            financeList.add(finance);
-                        }
-                    }
+                    financeList.add(setFinanceInfo(corpCode, year, quarter,  financeSrcList));
 
                     financeRepository.saveAll(financeList);
                 }
@@ -426,6 +446,67 @@ public class StockService {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+
+    private List<FinanceItem> setFinanceParser(List<FinanceItem> financeOriginList, String corpCode){
+        List<FinanceItem> financeList  = new ArrayList<>();
+
+        for(FinanceItem finance :  financeOriginList){
+            if(finance.getCorp_code().equals(corpCode)){
+                financeList.add(finance);
+            }
+        }
+
+        return financeList;
+    }
+
+    private CorpFinance setFinanceInfo(String corpCode, String year, QuarterCode quarter, List<FinanceItem> financeSrcList) {
+        CorpFinance finance = new CorpFinance();
+
+        finance.setRceptNo(financeSrcList.get(0).getRcept_no());
+        finance.setYearCode(year);
+        finance.setStockCode(financeSrcList.get(0).getStock_code());
+        finance.setCorpCode(financeSrcList.get(0).getCorp_code());
+
+        for (FinanceItem item : financeSrcList) {
+            if (item.getFs_div().equals("OFS")) {
+                Long value = Long.parseLong(item.getThstrm_amount().replace(",", ""));
+
+                if (item.getSj_div().equals("IS")) {
+                    if (item.getAccount_nm().equals("매출액")) {
+                        finance.setRevenue(value);
+
+                        String[] data = item.getThstrm_dt().replace(".", "").split(" ~ ");
+                        finance.setStartDt(DateUtils.toLocalDate(data[0]));
+                        finance.setEndDt(DateUtils.toLocalDate(data[1]));
+
+                    } else if (item.getAccount_nm().equals("영업이익")) {
+                        finance.setOperatingProfit(value);
+                    } else if (item.getAccount_nm().equals("당기순이익")) {
+                        finance.setNetIncome(value);
+                    }
+                } else if (item.getSj_div().equals("BS")) {
+                    if (item.getAccount_nm().equals("부채총계")) {
+                        finance.setTotalDebt(value);
+                    } else if (item.getAccount_nm().equals("자본금")) {
+                        finance.setCapital(value);
+                    } else if (item.getAccount_nm().equals("이익잉여금")) {
+                        finance.setEarnedSurplus(value);
+                    } else if (item.getAccount_nm().equals("자본총계")) {
+                        finance.setTotalEquity(value);
+                    } else if (item.getAccount_nm().equals("자산총계")) {
+                        finance.setTotalAssets(value);
+                    }
+                }
+
+                //YOY, QoQ 계산
+                setFinanceRatio(corpCode, year, quarter, finance);
+                //PSR PER 계산
+                setFinanceIndicators(finance);
+            }
+        }
+        return finance;
     }
 
     private void setFinanceRatio(String corpCode, String year, QuarterCode quarter, CorpFinance finance) {
@@ -472,9 +553,9 @@ public class StockService {
             targetDate = LocalDate.now();
         }
 
-        List<CorpInfo> targetCorp = corpInfoRepository.findByState(CorpState.ACTIVE);
+        List<CorpCodeMapper> targetCorp = corpInfoRepository.findByState(CorpState.ACTIVE);
 
-        for (CorpInfo corp : targetCorp) {
+        for (CorpCodeMapper corp : targetCorp) {
             stockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY5);
             stockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY20);
             stockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY60);
@@ -488,7 +569,6 @@ public class StockService {
 
         PageRequest pageRequest = PageRequest.of(0, priceType.getValue(), Sort.by("BAS_DT").descending());
         List<StockPrice> priceList = stockPriceRepository.findByStockCodeAndBasDtBefore(stockCode, targetDate, pageRequest);
-
 
         StockAverage average = new StockAverage();
         average.setStockCode(stockCode);
