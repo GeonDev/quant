@@ -111,6 +111,7 @@ CREATE TABLE IF NOT EXISTS TB_CORP_FINANCE (
   PSR double DEFAULT 0,
   PBR double DEFAULT 0,
   PER double DEFAULT 0,
+  POR double DEFAULT 0,
   YOY double DEFAULT 0,
   QOQ double DEFAULT 0,
   YTD double DEFAULT 0,
@@ -155,6 +156,17 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_PORTFOLIO (
   stock_count int ,
   PRIMARY KEY (portfolio_id)
 );
+
+CREATE TABLE IF NOT EXISTS TB_STOCK_TRADE (
+  portfolio_id bigint NOT NULL AUTO_INCREMENT,
+  user_key varchar(12) ,
+  trading_type varchar(11) ,
+  trading_Dt date ,
+  average int ,
+  stock_count int ,
+  PRIMARY KEY (portfolio_id)
+);
+
 
 
 CREATE TABLE IF NOT EXISTS TB_USER_INFO (

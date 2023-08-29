@@ -1,10 +1,8 @@
 package com.quant.core.entity;
 
-import com.quant.core.enums.TradingType;
 import lombok.Data;
 
 import javax.persistence.*;
-import java.time.LocalDate;
 
 @Entity
 @Data
@@ -17,17 +15,12 @@ public class Portfolio {
 
     String userKey;
 
-    //매매, 매수 구분
-    @Enumerated(EnumType.STRING)
-    TradingType trading;
+    //최소 모멘텀
+    Integer momentumScore;
 
-    //거래일
-    LocalDate tradingDt;
-
-    //1주당 평균 가격
-    Integer average;
-
-    //매매/매도 개수
     Integer stockCount;
-    
+
+    Integer marketCap;
+
+
 }

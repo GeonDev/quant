@@ -25,10 +25,25 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
     }
 
 
-    private OrderSpecifier[] createOrderSpecifier() {
+    private OrderSpecifier[] createOrderSpecifier(List<String> keyList) {
 
         List<OrderSpecifier> orderSpecifiers = new ArrayList<>();
-        orderSpecifiers.add(new OrderSpecifier(Order.DESC, corpFinance.YOY));
+
+        for(String key : keyList){
+
+            if(key.equals("PSR")){
+                orderSpecifiers.add(new OrderSpecifier(Order.ASC, corpFinance.PSR));
+            }else if(key.equals("POR")){
+                orderSpecifiers.add(new OrderSpecifier(Order.ASC, corpFinance.POR));
+            }else if(key.equals("PER")){
+                orderSpecifiers.add(new OrderSpecifier(Order.ASC, corpFinance.PER));
+            }
+
+
+
+
+
+        }
 
 
         return orderSpecifiers.toArray(new OrderSpecifier[orderSpecifiers.size()]);
