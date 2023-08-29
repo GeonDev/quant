@@ -132,6 +132,7 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_PRICE (
   daily_ratio double ,
   stock_total_cnt bigint ,
   market_total_amt bigint ,
+  momentum int,
   PRIMARY KEY (price_id)
 );
 

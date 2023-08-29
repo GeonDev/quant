@@ -10,6 +10,7 @@ import com.quant.core.enums.QuarterCode;
 import com.quant.core.enums.PriceType;
 import com.quant.core.enums.StockType;
 import com.quant.core.mapping.CorpCodeMapper;
+import com.quant.core.mapping.PriceMapper;
 import com.quant.core.repository.*;
 import com.quant.core.utils.CommonUtils;
 import com.quant.core.utils.DateUtils;
@@ -199,6 +200,9 @@ public class StockService {
                             price.setDailyRatio(Double.parseDouble(item.get("fltRt").toString()));
                             price.setStockTotalCnt(Long.parseLong(item.get("lstgStCnt").toString()));
                             price.setMarketTotalAmt(Long.parseLong(item.get("mrktTotAmt").toString()));
+
+
+                            getMomentumScore(price.getEndPrice(), price.getStockCode());
 
                             stockPriceRepository.save(price);
                             currentCount += 1;
@@ -536,8 +540,8 @@ public class StockService {
     }
 
     public void setFinanceIndicators(CorpFinance finance) {
-        //분기 데이터의 마지막일자 시장가 불러오기
-        StockPrice nowPrice = stockPriceRepository.findTopByStockCodeAndBasDt(finance.getStockCode(), finance.getEndDt());
+        //분기 데이터의 마지막일자 시가총액 불러오기
+        PriceMapper nowPrice = stockPriceRepository.findTopByStockCodeAndBasDt(finance.getStockCode(), finance.getEndDt());
 
         if(nowPrice != null){
             finance.setPSR(nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue());
@@ -588,5 +592,31 @@ public class StockService {
 
         stockAverageRepository.save(average);
     }
+
+    Integer getMomentumScore(Integer price, String code){
+        Integer score = 0;
+
+        for(int i =1; i<= 12; i++){
+            LocalDate target = LocalDate.now().minusMonths(i);
+            if(target.getDayOfWeek().getValue() == 6 ){
+                target = target.minusDays(1);
+            }else if(target.getDayOfWeek().getValue() == 7){
+                target = target.plusDays(1);
+            }
+
+            PriceMapper bfPrice = stockPriceRepository.findTopByStockCodeAndBasDt(code, target);
+
+            if(bfPrice != null){
+                if(price > bfPrice.getEndPrice()){
+                    score ++;
+                }else if(price < bfPrice.getEndPrice()){
+                    score --;
+                }
+            }
+        }
+
+        return score;
+    }
+
 
 }
