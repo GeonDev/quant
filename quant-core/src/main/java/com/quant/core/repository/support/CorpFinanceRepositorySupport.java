@@ -16,7 +16,6 @@ import static com.quant.core.entity.QCorpFinance.corpFinance;
 @Repository
 public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
 
-    @Autowired
     private final JPAQueryFactory queryFactory;
 
     public CorpFinanceRepositorySupport(JPAQueryFactory queryFactory) {
@@ -38,10 +37,6 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
             }else if(key.equals("PER")){
                 orderSpecifiers.add(new OrderSpecifier(Order.ASC, corpFinance.PER));
             }
-
-
-
-
 
         }
 

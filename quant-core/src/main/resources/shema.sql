@@ -147,23 +147,23 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_AVERAGE (
 );
 
 
+CREATE TABLE IF NOT EXISTS TB_STOCK_TRADE (
+  trade_id bigint NOT NULL AUTO_INCREMENT,
+  user_key varchar(12) ,
+  trading_type varchar(11) ,
+  trading_Dt date ,
+  average int ,
+  stock_count int ,
+  PRIMARY KEY (trade_id)
+);
+
 CREATE TABLE IF NOT EXISTS TB_STOCK_PORTFOLIO (
   portfolio_id bigint NOT NULL AUTO_INCREMENT,
   user_key varchar(12) ,
-  trading_type varchar(11) ,
-  trading_Dt date ,
-  average int ,
+  momentum_score int ,
   stock_count int ,
-  PRIMARY KEY (portfolio_id)
-);
-
-CREATE TABLE IF NOT EXISTS TB_STOCK_TRADE (
-  portfolio_id bigint NOT NULL AUTO_INCREMENT,
-  user_key varchar(12) ,
-  trading_type varchar(11) ,
-  trading_Dt date ,
-  average int ,
-  stock_count int ,
+  market_cap int ,
+  order_set varchar(512),
   PRIMARY KEY (portfolio_id)
 );
 

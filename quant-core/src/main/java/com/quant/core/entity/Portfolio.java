@@ -22,5 +22,6 @@ public class Portfolio {
 
     Integer marketCap;
 
+    String orderSet;
 
 }
