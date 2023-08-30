@@ -18,9 +18,11 @@ import com.quant.stock.model.dart.DartBase;
 import com.quant.stock.model.dart.FinanceItem;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,6 +45,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -50,7 +53,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StockService {
@@ -94,33 +97,48 @@ public class StockService {
         }
 
         try {
-            UriComponents uri = UriComponentsBuilder
-                    .newInstance()
-                    .scheme("http")
-                    .host(ApplicationConstants.API_GO_URL)
-                    .path(ApplicationConstants.KAI_REST_DATE_URL)
-                    .queryParam("solYear", targetDate.getYear())
-                    .queryParam("solMonth", targetDate.getMonthValue() < 10 ? "0" + targetDate.getMonthValue() : targetDate.getMonthValue())
-                    .queryParam("_type", "json")
-                    .queryParam("ServiceKey", URLDecoder.decode(apiKey, "UTF-8"))
-                    .queryParam("numOfRows", 10)
-                    .build();
+            if (!checkIsDayOff(targetDate)) {
+                getStockPrice(StockType.KOSPI.name(), DateUtils.toLocalDateString(targetDate), 1, 0, 0);
+                getStockPrice(StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate), 1, 0, 0);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
-            RestTemplate restTemplate = new RestTemplate();
-            ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
+    private boolean checkIsDayOff(LocalDate targetDate ) throws UnsupportedEncodingException, ParseException {
+        boolean isDayOff = false;
 
-            JSONParser parser = new JSONParser();
-            JSONObject object = (JSONObject) parser.parse(result.getBody());
-            JSONObject response = (JSONObject) object.get("response");
-            JSONObject header = (JSONObject) response.get("header");
-            JSONObject body = (JSONObject) response.get("body");
+        UriComponents uri = UriComponentsBuilder
+                .newInstance()
+                .scheme("http")
+                .host(ApplicationConstants.API_GO_URL)
+                .path(ApplicationConstants.KAI_REST_DATE_URL)
+                .queryParam("solYear", targetDate.getYear())
+                .queryParam("solMonth", targetDate.getMonthValue() < 10 ? "0" + targetDate.getMonthValue() : targetDate.getMonthValue())
+                .queryParam("_type", "json")
+                .queryParam("ServiceKey", URLDecoder.decode(apiKey, "UTF-8"))
+                .queryParam("numOfRows", 10)
+                .build();
+
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
+
+        JSONParser parser = new JSONParser();
+        JSONObject object = (JSONObject) parser.parse(result.getBody());
+        JSONObject response = (JSONObject) object.get("response");
+        JSONObject header = (JSONObject) response.get("header");
+        JSONObject body = (JSONObject) response.get("body");
 
 
-            boolean isDayOff = false;
+        logger.debug("REST item {}", body.get("items").toString());
 
-            logger.debug("REST item {}", body.get("items").toString());
-            if (!body.get("items").toString().equals("")) {
-                JSONObject items = (JSONObject) body.get("items");
+        if (!body.get("items").toString().equals("")) {
+            JSONObject items = (JSONObject) body.get("items");
+
+
+            try {
+                //공휴일이 1개 이상일때
                 JSONArray itemList = (JSONArray) items.get("item");
 
                 if (object != null && header.get("resultMsg").toString().equals(ApplicationConstants.REQUEST_MSG)) {
@@ -133,15 +151,17 @@ public class StockService {
                         }
                     }
                 }
+            }catch (ClassCastException e ){
+                //공휴일이 1개만 내려올때
+                JSONObject item = (JSONObject) items.get("item");
+                if (DateUtils.toStringLocalDate(item.get("locdate").toString()).isEqual(targetDate)) {
+                    isDayOff = true;
+                }
             }
 
-            if (!isDayOff) {
-                getStockPrice(StockType.KOSPI.name(), DateUtils.toLocalDateString(targetDate), 1, 0, 0);
-                getStockPrice(StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate), 1, 0, 0);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
+
+        return isDayOff;
     }
 
 

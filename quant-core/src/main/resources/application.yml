@@ -44,6 +44,7 @@ signkey:
 
 file:
   path: /Users/kada/data/dart/
+  #path: /Users/jnote/data/dart/
 
 cron:
   krx:
