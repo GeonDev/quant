@@ -71,6 +71,4 @@ public class CorpFinance implements Serializable {
     Double QOQ;
 
     Double YTD;
-
-
 }

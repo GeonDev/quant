@@ -1,10 +1,13 @@
 package com.quant.core.repository.support;
 
 import com.quant.core.entity.CorpFinance;
+import com.quant.core.mapping.dto.CorpFinanceSimpleDto;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
 import org.springframework.stereotype.Repository;
 
@@ -21,6 +24,32 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
     public CorpFinanceRepositorySupport(JPAQueryFactory queryFactory) {
         super(CorpFinance.class);
         this.queryFactory = queryFactory;
+    }
+
+
+    public List<CorpFinanceSimpleDto> findByFinanceSimple(Long id){
+        List<CorpFinanceSimpleDto> results = queryFactory
+                .select(
+                        Projections.constructor(CorpFinanceSimpleDto.class,
+                                corpFinance.financeId,
+                                new CaseBuilder()
+                                        .when(corpFinance.corpCode.eq("Q1")).then("1분기")
+                                        .when(corpFinance.corpCode.eq("Q2")).then("2분기")
+                                        .when(corpFinance.corpCode.eq("Q3")).then("3분기")
+                                        .otherwise("4분기"),
+                                corpFinance.stockCode,
+                                corpFinance.capital,
+                                corpFinance.totalAssets,
+                                corpFinance.totalDebt,
+                                corpFinance.totalEquity,
+                                corpFinance.revenue,
+                                corpFinance.netIncome,
+                                corpFinance.operatingProfit
+                        )
+                )
+                .from(corpFinance).where(corpFinance.financeId.eq(id)).fetch();
+
+        return  results;
     }
 
 
