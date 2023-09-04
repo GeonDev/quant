@@ -66,9 +66,16 @@ public class CorpFinance implements Serializable {
     //시가총액 % 영업이익
     Double POR;
 
+    //전년도 매출액 성장율 (시가총액 반영)
     Double YOY;
 
+    //분기 매출액 성장율 (시가총액 반영)
     Double QOQ;
 
-    Double YTD;
+    //영업 이익 성장율
+    Double OPGE;
+
+    //주가 순이익 성장율
+    Double PGE;
+
 }

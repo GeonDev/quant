@@ -534,28 +534,39 @@ public class StockService {
     }
 
     private void setFinanceRatio(String corpCode, String year, QuarterCode quarter, CorpFinance finance) {
+        //분기 데이터의 마지막일자 시가총액 불러오기
+        PriceMapper nowPrice = stockPriceRepository.findTopByStockCodeAndBasDt(finance.getStockCode(), finance.getEndDt());
+
         //전년도 재무정보
         CorpFinance byFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getCode(), String.valueOf(Integer.parseInt(year) - 1));
+
         if(byFinance != null){
-            Double yoy = ((finance.getRevenue().doubleValue() - byFinance.getRevenue().doubleValue()) - 1.0) * 100;
+            Double yoy = ((finance.getRevenue().doubleValue() - byFinance.getRevenue().doubleValue())/nowPrice.getMarketTotalAmt()) * 100;
             finance.setYOY(yoy);
         }
 
         //전분기 재무정보 가지고 오기
+        CorpFinance bqFinance;
         if (quarter.equals(QuarterCode.Q1)) {
             //전분기 재무정보 (1분기 값은 작년정보)
-            CorpFinance bqFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getBefore(), String.valueOf(Integer.parseInt(year) - 1));
-            if(bqFinance != null){
-                Double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue()) - 1.0) * 100;
-                finance.setQOQ(qoq);
-            }
+            bqFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getBefore(), String.valueOf(Integer.parseInt(year) - 1));
         } else {
             //전분기 재무정보
-            CorpFinance bqFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getBefore(), year);
-            if(bqFinance != null){
-                Double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue()) - 1.0) * 100;
-                finance.setQOQ(qoq);
-            }
+            bqFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getBefore(), year);
+        }
+        setFinanceGrowth(bqFinance, finance, nowPrice);
+    }
+
+    private void setFinanceGrowth(CorpFinance bqFinance, CorpFinance finance, PriceMapper nowPrice) {
+        if(bqFinance != null){
+            Double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue())/ nowPrice.getMarketTotalAmt()) * 100;
+            finance.setQOQ(qoq);
+
+            Double OPGE =  ((finance.getOperatingProfit().doubleValue() - bqFinance.getOperatingProfit().doubleValue())/ nowPrice.getMarketTotalAmt()) * 100;
+            finance.setOPGE(OPGE);
+
+            Double PGE = ((finance.getNetIncome().doubleValue() - bqFinance.getNetIncome().doubleValue())/ nowPrice.getMarketTotalAmt()) * 100;
+            finance.setPGE(PGE);
         }
     }
 
