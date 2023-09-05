@@ -114,7 +114,8 @@ CREATE TABLE IF NOT EXISTS TB_CORP_FINANCE (
   POR double DEFAULT 0,
   YOY double DEFAULT 0,
   QOQ double DEFAULT 0,
-  YTD double DEFAULT 0,
+  OPGE double DEFAULT 0,
+  PGE double DEFAULT 0,
   PRIMARY KEY (finance_id)
 );
 
@@ -162,8 +163,9 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_PORTFOLIO (
   user_key varchar(12) ,
   momentum_score int ,
   stock_count int ,
-  market_cap int ,
-  order_set varchar(512),
+  ranges varchar(20) ,
+  indicator varchar(512),
+  rebalance varchar(256),
   PRIMARY KEY (portfolio_id)
 );
 

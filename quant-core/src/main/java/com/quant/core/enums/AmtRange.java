@@ -8,6 +8,5 @@ public enum AmtRange {
     LOWER20("시가총액 하위 20%"),
     ALL("상장 주식 전체");
 
-
     private String desc;
 }

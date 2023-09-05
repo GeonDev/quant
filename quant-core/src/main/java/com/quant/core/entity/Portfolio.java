@@ -23,11 +23,12 @@ public class Portfolio {
     Integer stockCount;
 
     //시총 범위
-    AmtRange range;
+    @Enumerated(EnumType.STRING)
+    AmtRange ranges;
 
     //지표 (ex per,psr ...)
-    String Indicator;
+    String indicator;
 
     //리벨런싱 (ex 1,6,12 ...)
-    String reBalance;
+    String rebalance;
 }
