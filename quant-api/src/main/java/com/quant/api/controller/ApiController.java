@@ -5,6 +5,9 @@ import com.quant.core.enums.QuarterCode;
 import com.quant.core.utils.DateUtils;
 import com.quant.stock.service.StockService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -15,12 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 
-
 @AllowAccessIp
 @RestController
 @RequiredArgsConstructor
 public class ApiController {
-
     private final StockService stockService;
 
 
@@ -36,16 +37,24 @@ public class ApiController {
         return ResponseEntity.ok("SET CODE");
     }
 
-
     @GetMapping(value = "price", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity getStockPrice(@RequestParam(value = "date", required = false, defaultValue = "") String date) {
-        LocalDate targetDate = LocalDate.now();
+    public ResponseEntity getStockPrice(@RequestParam(value = "sDate", required = false, defaultValue = "") String sDate,
+                                        @RequestParam(value = "eDate", required = false, defaultValue = "") String eDate) {
 
-        if (StringUtils.hasText(date)) {
-            targetDate = DateUtils.toLocalDate(date);
+        if (StringUtils.hasText(sDate) && StringUtils.hasText(eDate)){
+            LocalDate startDate = DateUtils.toStringLocalDate(sDate);
+            LocalDate endDate = DateUtils.toStringLocalDate(eDate);
+
+            while (!endDate.equals(startDate)){
+                stockService.getKrxDailyInfo(startDate);
+                startDate = startDate.plusDays(1);
+            }
+        }else if(StringUtils.hasText(sDate) && !StringUtils.hasText(eDate)){
+            stockService.getKrxDailyInfo(DateUtils.toStringLocalDate(sDate));
+        }else {
+            stockService.getKrxDailyInfo(LocalDate.now());
         }
 
-        stockService.getKrxDailyInfo(targetDate);
         return ResponseEntity.ok("SET PRICE");
     }
 
@@ -57,6 +66,7 @@ public class ApiController {
             year = Integer.toString(LocalDate.now().getYear());
         }
 
+        //특정 기업을 지정했을때
         if(StringUtils.hasText(corpCode)){
             if(quarter != null){
                 stockService.setSingleCorpFinanceInfo(corpCode, year, quarter);
@@ -66,19 +76,25 @@ public class ApiController {
         }else{
             stockService.setMultiCorpFinanceInfo(year);
         }
-
         return ResponseEntity.ok("SET FINANCE");
     }
 
     @GetMapping(value = "average", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity getAveragePrice(@RequestParam(value = "date", required = false, defaultValue = "") String date) {
-        LocalDate targetDate = LocalDate.now();
+    public ResponseEntity getAveragePrice(@RequestParam(value = "sDate", required = false, defaultValue = "") String sDate,
+                                          @RequestParam(value = "eDate", required = false, defaultValue = "") String eDate) {
+        if (StringUtils.hasText(sDate) && StringUtils.hasText(eDate)){
+            LocalDate startDate = DateUtils.toStringLocalDate(sDate);
+            LocalDate endDate = DateUtils.toStringLocalDate(eDate);
 
-        if (StringUtils.hasText(date)) {
-            targetDate = DateUtils.toStringLocalDate(date);
+            while (!endDate.equals(endDate)){
+                stockService.setStockPriceAverage(startDate);
+                startDate.plusDays(1);
+            }
+        }else if(StringUtils.hasText(sDate) && !StringUtils.hasText(eDate)){
+            stockService.setStockPriceAverage(DateUtils.toStringLocalDate(sDate));
+        }else {
+            stockService.setStockPriceAverage(LocalDate.now());
         }
-
-        stockService.setStockPriceAverage(targetDate);
         return ResponseEntity.ok("SET AVERAGE");
     }
 

@@ -86,8 +86,12 @@ public class StockService {
 
     //주식 시장 활성일 체크 -> 활성일 일 경우 주식 시세 받기
     public void getKrxDailyInfo(LocalDate targetDate) {
-
         logger.debug("getKrxStockPrice date : {}", targetDate);
+
+        //주말은 무시
+        if(targetDate.getDayOfWeek().getValue() == 0 || targetDate.getDayOfWeek().getValue() == 6 ){
+            return;
+        }
 
         //공공정보 API는 1일전 데이터가 최신, 전일 데이터는 오후 1시에 갱신, 월요일에 금요일 데이터 갱신
         if (targetDate.getDayOfWeek().getValue() == 1) {
@@ -130,9 +134,7 @@ public class StockService {
         JSONObject header = (JSONObject) response.get("header");
         JSONObject body = (JSONObject) response.get("body");
 
-
-        logger.debug("REST item {}", body.get("items").toString());
-
+        
         if (!body.get("items").toString().equals("")) {
             JSONObject items = (JSONObject) body.get("items");
 
@@ -166,6 +168,7 @@ public class StockService {
 
 
     //주식 시세 받아오기
+    @Transactional
     public void getStockPrice(String marketType, String basDt, int pageNum, int totalCount, int currentCount) {
         if (totalCount != 0 && totalCount <= currentCount) {
             return;
@@ -210,7 +213,7 @@ public class StockService {
                         if(!item.get("itmsNm").toString().contains("스팩")){
                             price.setStockCode(item.get("srtnCd").toString());
                             price.setMarketCode(marketType);
-                            price.setBasDt(DateUtils.toLocalDate(basDt));
+                            price.setBasDt(DateUtils.toStringLocalDate(basDt));
                             price.setVolume(Integer.parseInt(item.get("trqu").toString()));
                             price.setStartPrice(Integer.parseInt(item.get("mkp").toString()));
                             price.setEndPrice(Integer.parseInt(item.get("clpr").toString()));
@@ -240,6 +243,7 @@ public class StockService {
 
 
     //상장 회사 고유 정보 받아오기
+    @Transactional
     public void getDartCorpCodeInfo() {
         UriComponents uri = UriComponentsBuilder
                 .newInstance()
@@ -280,6 +284,7 @@ public class StockService {
                 if (corp != null) {
                     //상장된 회사만 저장
                     if (getValue("stock_code", corp) != null && StringUtils.hasText(getValue("stock_code", corp))) {
+
                         //스팩, 투자회사등 제외
                         if (!getValue("corp_name", corp).contains("스팩") &&
                                 !getValue("corp_name", corp).contains("기업인수") &&
@@ -291,6 +296,7 @@ public class StockService {
                                 !getValue("corp_name", corp).contains("유동화전문") &&
                                 !getValue("corp_name", corp).contains("리미티드") &&
                                 !getValue("corp_name", corp).contains("펀드") &&
+                                !getValue("corp_name", corp).matches("^*\\d호.*$") &&
                                 !getValue("corp_name", corp).toLowerCase(Locale.ROOT).contains("llc") &&
                                 !getValue("corp_name", corp).toLowerCase(Locale.ROOT).contains("limited") &&
                                 !getValue("corp_name", corp).toLowerCase(Locale.ROOT).contains("ltd") &&
@@ -502,8 +508,8 @@ public class StockService {
                         finance.setRevenue(value);
 
                         String[] data = item.getThstrm_dt().replace(".", "").split(" ~ ");
-                        finance.setStartDt(DateUtils.toLocalDate(data[0]));
-                        finance.setEndDt(DateUtils.toLocalDate(data[1]));
+                        finance.setStartDt(DateUtils.toStringLocalDate(data[0]));
+                        finance.setEndDt(DateUtils.toStringLocalDate(data[1]));
 
                     } else if (item.getAccount_nm().equals("영업이익")) {
                         finance.setOperatingProfit(value);

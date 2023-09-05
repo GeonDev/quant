@@ -22,6 +22,9 @@ public class Portfolio {
     //포트폴리오당 최대 종목개수
     Integer stockCount;
 
+    //손절 퍼센트
+    Integer lossCut ;
+
     //시총 범위
     @Enumerated(EnumType.STRING)
     AmtRange ranges;

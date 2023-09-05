@@ -1,5 +1,6 @@
 package com.quant.core.utils;
 
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -17,15 +18,12 @@ public class DateUtils {
     }
 
 
-    public static LocalDate toLocalDate(String str){
-        LocalDate date = LocalDate.parse(str, DateTimeFormatter.ofPattern("yyyyMMdd"));
-        return date;
-    }
-
-
     public static LocalDate toStringLocalDate(String str){
-        LocalDate date = LocalDate.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        return date;
+        try {
+            return LocalDate.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        }catch (DateTimeException e){
+            return LocalDate.parse(str, DateTimeFormatter.ofPattern("yyyyMMdd"));
+        }
     }
 
     public static String toLocalDatetimeString(LocalDateTime dateTime){
