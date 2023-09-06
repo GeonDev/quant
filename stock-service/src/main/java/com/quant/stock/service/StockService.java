@@ -101,15 +101,14 @@ public class StockService {
         }
 
         try {
-            if (!checkIsDayOff(targetDate)) {
-                getStockPrice(StockType.KOSPI.name(), DateUtils.toLocalDateString(targetDate), 1, 0, 0);
-                getStockPrice(StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate), 1, 0, 0);
-            }
+            getStockPrice(StockType.KOSPI.name(), DateUtils.toLocalDateString(targetDate), 1, 0, 1);
+            getStockPrice(StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate), 1, 0, 1);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    //공휴일 체크 기능 - API 호출이 원활하지 않아 미사용
     private boolean checkIsDayOff(LocalDate targetDate ) throws UnsupportedEncodingException, ParseException {
         boolean isDayOff = false;
 
@@ -138,7 +137,6 @@ public class StockService {
         if (!body.get("items").toString().equals("")) {
             JSONObject items = (JSONObject) body.get("items");
 
-
             try {
                 //공휴일이 1개 이상일때
                 JSONArray itemList = (JSONArray) items.get("item");
@@ -160,7 +158,6 @@ public class StockService {
                     isDayOff = true;
                 }
             }
-
         }
 
         return isDayOff;
@@ -170,10 +167,6 @@ public class StockService {
     //주식 시세 받아오기
     @Transactional
     public void getStockPrice(String marketType, String basDt, int pageNum, int totalCount, int currentCount) {
-        if (totalCount != 0 && totalCount <= currentCount) {
-            return;
-        }
-
         try {
             UriComponents uri = UriComponentsBuilder
                     .newInstance()
@@ -205,6 +198,7 @@ public class StockService {
                     JSONObject items = (JSONObject) body.get("items");
                     JSONArray itemList = (JSONArray) items.get("item");
 
+                    List<StockPrice> priceList = new ArrayList<>();
 
                     for (int i = 0; i < itemList.size(); i++) {
                         JSONObject item = (JSONObject) itemList.get(i);
@@ -224,15 +218,17 @@ public class StockService {
                             price.setStockTotalCnt(Long.parseLong(item.get("lstgStCnt").toString()));
                             price.setMarketTotalAmt(Long.parseLong(item.get("mrktTotAmt").toString()));
 
-
                             getMomentumScore(price.getEndPrice(), price.getStockCode());
-
-                            stockPriceRepository.save(price);
-                            currentCount += 1;
+                            priceList.add(price);
                         }
-
+                        currentCount += 1;
                     }
-                    getStockPrice(marketType, basDt, pageNum + 1, totalCount, currentCount);
+
+                    stockPriceRepository.saveAll(priceList);
+
+                    if(currentCount < totalCount ){
+                        getStockPrice(marketType, basDt, pageNum + 1, totalCount, currentCount + 1);
+                    }
                 }
 
             }
@@ -302,16 +298,19 @@ public class StockService {
                                 !getValue("corp_name", corp).toLowerCase(Locale.ROOT).contains("ltd") &&
                                 !getValue("corp_name", corp).toLowerCase(Locale.ROOT).contains("fund")) {
 
-                            CorpInfo code = corpInfoRepository.findById(getValue("corp_code", corp)).orElseGet(() -> new CorpInfo().builder()
-                                    .corpCode(getValue("corp_code", corp))
-                                    .stockCode(getValue("stock_code", corp))
-                                    .corpName(getValue("corp_name", corp))
-                                    .state(CorpState.ACTIVE)
-                                    .build());
+                            //가격정보가 있는 데이터 인지 확인
+                            if(stockPriceRepository.countByStockCode(getValue("stock_code", corp)) > 0 ){
+                                CorpInfo code = corpInfoRepository.findById(getValue("corp_code", corp)).orElseGet(() -> new CorpInfo().builder()
+                                        .corpCode(getValue("corp_code", corp))
+                                        .stockCode(getValue("stock_code", corp))
+                                        .corpName(getValue("corp_name", corp))
+                                        .state(CorpState.ACTIVE)
+                                        .build());
 
-                            //체크 일자 업데이트
-                            code.setCheckDt(LocalDate.now());
-                            codeList.add(code);
+                                //체크 일자 업데이트
+                                code.setCheckDt(LocalDate.now());
+                                codeList.add(code);
+                            }
                         }
                     }
                 }
@@ -366,13 +365,11 @@ public class StockService {
         }
 
         StringBuffer sb = new StringBuffer();
-
         for (CorpCodeMapper corpCode : infoList) {
             sb.append(corpCode.getCorpCode());
             sb.append(",");
         }
-
-        String codeList = sb.substring(sb.lastIndexOf(","));
+        sb.setLength(sb.length()-1);
 
         UriComponents uri = UriComponentsBuilder
                 .newInstance()
@@ -380,7 +377,7 @@ public class StockService {
                 .host(ApplicationConstants.DART_API_URL)
                 .path(ApplicationConstants.DART_STOCK_FINANCE_MULTI_URI)
                 .queryParam("crtfc_key", dartKey)
-                .queryParam("corp_code", codeList)
+                .queryParam("corp_code", sb)
                 .queryParam("bsns_year", year)
                 .queryParam("reprt_code", quarter.getCode())
                 .build();
@@ -389,7 +386,6 @@ public class StockService {
         ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
 
         try {
-
             ObjectMapper mapper = new ObjectMapper();
             mapper.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
             mapper.enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES);
@@ -415,9 +411,7 @@ public class StockService {
 
 
     //단일 상장회사 재무 정보 다운로드
-    @Transactional
     public void setSingleCorpFinanceInfo(String corpCode, String year) {
-
         // 15년 이전 데이터는 지원 안함
         if(Integer.parseInt(year) < 2015){
             return;

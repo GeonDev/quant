@@ -5,9 +5,6 @@ import com.quant.core.enums.QuarterCode;
 import com.quant.core.utils.DateUtils;
 import com.quant.stock.service.StockService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -31,12 +28,6 @@ public class ApiController {
     }
 
 
-    @GetMapping(value = "code", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity getCorpCode() {
-        stockService.getDartCorpCodeInfo();
-        return ResponseEntity.ok("SET CODE");
-    }
-
     @GetMapping(value = "price", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getStockPrice(@RequestParam(value = "sDate", required = false, defaultValue = "") String sDate,
                                         @RequestParam(value = "eDate", required = false, defaultValue = "") String eDate) {
@@ -57,6 +48,15 @@ public class ApiController {
 
         return ResponseEntity.ok("SET PRICE");
     }
+
+
+    @GetMapping(value = "code", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity getCorpCode() {
+        stockService.getDartCorpCodeInfo();
+        return ResponseEntity.ok("SET CODE");
+    }
+
+
 
     @GetMapping(value = "fin", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getFinance(@RequestParam(value = "corpCode", required = false, defaultValue = "") String corpCode,
