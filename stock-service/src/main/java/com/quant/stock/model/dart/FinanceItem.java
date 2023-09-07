@@ -47,6 +47,9 @@ public class FinanceItem {
     @Schema(description = "\t당기금액\t9,999,999,999")
     String thstrm_amount;
 
+    @Schema(description = "\t당기누적금액\t9,999,999,999")
+    String thstrm_add_amount;
+
     @Schema(description = "\t전기명\tex) 제 12 기말")
     String frmtrm_nm;
 
@@ -56,9 +59,23 @@ public class FinanceItem {
     @Schema(description = "\t전기금액\t9,999,999,999")
     String frmtrm_amount;
 
+    @Schema(description = "\t전기누적금액\t9,999,999,999")
+    String frmtrm_add_amount;
+
+    @Schema(description = "전전기명 (사업보고서 일때만 출력)")
+    String bfefrmtrm_nm;
+
+    @Schema(description = "전전기일자 (사업보고서 일때만 출력)")
+    String bfefrmtrm_dt;
+
+    @Schema(description = "전전기금액 (사업보고서 일때만 출력)")
+    String bfefrmtrm_amount;
+
     @Schema(description = "\t계정과목 정렬순서\t계정과목 정렬순서")
     String ord;
 
     @Schema(description = "\t통화 단위\t통화 단위")
     String currency;
+
+
 }

@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS TB_CORP_INFO (
 
 CREATE TABLE IF NOT EXISTS TB_CORP_FINANCE (
   finance_id bigint NOT NULL AUTO_INCREMENT,
-  rcept_no varchar(5),
+  rcept_no varchar(20),
   corp_code varchar(11) ,
   stock_code varchar(11) ,
   year_code varchar(4),

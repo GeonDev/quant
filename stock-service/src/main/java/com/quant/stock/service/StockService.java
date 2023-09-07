@@ -26,7 +26,9 @@ import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -86,8 +88,6 @@ public class StockService {
 
     //주식 시장 활성일 체크 -> 활성일 일 경우 주식 시세 받기
     public void getKrxDailyInfo(LocalDate targetDate) {
-        logger.debug("getKrxStockPrice date : {}", targetDate);
-
         //주말은 무시
         if(targetDate.getDayOfWeek().getValue() == 0 || targetDate.getDayOfWeek().getValue() == 6 ){
             return;
@@ -101,14 +101,16 @@ public class StockService {
         }
 
         try {
-            getStockPrice(StockType.KOSPI.name(), DateUtils.toLocalDateString(targetDate), 1, 0, 1);
-            getStockPrice(StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate), 1, 0, 1);
+            if(!checkIsDayOff(targetDate)){
+                getStockPrice(StockType.KOSPI.name(), DateUtils.toLocalDateString(targetDate), 1, 0, 1);
+                getStockPrice(StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate), 1, 0, 1);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    //공휴일 체크 기능 - API 호출이 원활하지 않아 미사용
+    //공휴일 체크 기능
     private boolean checkIsDayOff(LocalDate targetDate ) throws UnsupportedEncodingException, ParseException {
         boolean isDayOff = false;
 
@@ -192,7 +194,7 @@ public class StockService {
 
             totalCount = Integer.parseInt(body.get("totalCount").toString());
 
-            if (header.get("resultMsg").toString().equals(ApplicationConstants.REQUEST_MSG)) {
+            if (header.get("resultMsg").toString().equals(ApplicationConstants.REQUEST_MSG) && totalCount > 0) {
 
                 if (!body.get("items").toString().equals("")) {
                     JSONObject items = (JSONObject) body.get("items");
@@ -338,23 +340,29 @@ public class StockService {
         return node.getTextContent().trim();
     }
 
-
-    @Transactional
     public void setMultiCorpFinanceInfo(String year) {
         // 15년 이전 데이터는 지원 안함
         if(Integer.parseInt(year) < 2015){
             return;
         }
 
-        setMultiCorpFinanceInfo(year,  QuarterCode.Q1);
-        setMultiCorpFinanceInfo( year,  QuarterCode.Q2);
-        setMultiCorpFinanceInfo( year,  QuarterCode.Q3);
-        setMultiCorpFinanceInfo( year,  QuarterCode.Q4);
+        Long totalCount = corpInfoRepository.countByState(CorpState.ACTIVE);
+        int pageSize = (int)Math.ceil(totalCount/100.0);
+
+        for(int i =0; i< pageSize; i++){
+            Pageable pageable = PageRequest.of(i, 100);
+            Page<CorpCodeMapper> codePage = corpInfoRepository.findByState(pageable, CorpState.ACTIVE);
+
+            setMultiCorpFinanceInfo(codePage.getContent(), year, QuarterCode.Q1);
+            setMultiCorpFinanceInfo(codePage.getContent(), year, QuarterCode.Q2);
+            setMultiCorpFinanceInfo(codePage.getContent(), year, QuarterCode.Q3);
+            setMultiCorpFinanceInfo(codePage.getContent(), year, QuarterCode.Q4);
+        }
     }
 
     //회사 목록 전체의 재무재표 업데이트
-    public void setMultiCorpFinanceInfo(String year, QuarterCode quarter) {
-        List<CorpCodeMapper> infoList = corpInfoRepository.findByState(CorpState.ACTIVE);
+    @Transactional
+    public void setMultiCorpFinanceInfo(List<CorpCodeMapper> infoList, String year, QuarterCode quarter) {
 
         if(!StringUtils.hasText(year)){
             year = Integer.toString(LocalDate.now().getYear());
@@ -392,17 +400,20 @@ public class StockService {
             DartBase<FinanceItem> response = mapper.readValue(result.getBody(), DartBase.class);
 
             if (response.getStatus().equals("000")) {
-                List<CorpFinance> financeList = null;
+                List<CorpFinance> financeList = new ArrayList<>();
                 List<FinanceItem> financeOrigin = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {});
 
-                for (CorpCodeMapper corpCode : infoList) {
-                    financeList.add(setFinanceInfo(corpCode.getCorpCode(), year, quarter,  setFinanceParser(financeOrigin,corpCode.getCorpCode())));
+                if(financeOrigin.size() > 0){
+                    for (CorpCodeMapper corpCode : infoList) {
+                        List<FinanceItem> financeItems = setFinanceParser(financeOrigin,corpCode.getCorpCode());
+                        if(financeItems.size() > 0){
+                            financeList.add(setFinanceInfo(corpCode.getCorpCode(), year, quarter, financeItems ));
+                        }
+                    }
                 }
 
                 financeRepository.saveAll(financeList);
             }
-
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -486,6 +497,7 @@ public class StockService {
     }
 
     private CorpFinance setFinanceInfo(String corpCode, String year, QuarterCode quarter, List<FinanceItem> financeSrcList) {
+
         CorpFinance finance = new CorpFinance();
 
         finance.setRceptNo(financeSrcList.get(0).getRcept_no());
