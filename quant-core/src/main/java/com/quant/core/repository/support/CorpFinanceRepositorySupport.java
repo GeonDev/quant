@@ -27,7 +27,8 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
     }
 
 
-    public List<CorpFinanceSimpleDto> findByFinanceSimple(Long id){
+    public List<CorpFinanceSimpleDto> findByFinanceSimple(Long id, List<String> orderList){
+
         List<CorpFinanceSimpleDto> results = queryFactory
                 .select(
                         Projections.constructor(CorpFinanceSimpleDto.class,
@@ -47,7 +48,10 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
                                 corpFinance.operatingProfit
                         )
                 )
-                .from(corpFinance).where(corpFinance.financeId.eq(id)).fetch();
+                .from(corpFinance)
+                .where(corpFinance.financeId.eq(id))
+                .orderBy(createOrderSpecifier(orderList))
+                .fetch();
 
         return  results;
     }
@@ -68,8 +72,6 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
             }
 
         }
-
-
         return orderSpecifiers.toArray(new OrderSpecifier[orderSpecifiers.size()]);
     }
 }
