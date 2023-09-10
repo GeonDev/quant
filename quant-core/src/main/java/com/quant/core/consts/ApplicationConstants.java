@@ -6,6 +6,8 @@ public class ApplicationConstants {
         throw new IllegalAccessError("어플리케이션에서 공통으로 사용되는 상수 클래스로 생성자를 사용할 수 없습니다.");
     }
 
+    public static final String SPLIT_KEY = ",";
+
     //오픈 dart의 최소 제공 연수
     public static final int LIMIT_YEAR = 2020;
 

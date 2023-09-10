@@ -1,7 +1,7 @@
 package com.quant.core.repository;
 
 import com.quant.core.entity.StockPrice;
-import com.quant.core.mapping.PriceMapper;
+import com.quant.core.repository.mapping.PriceMapper;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 

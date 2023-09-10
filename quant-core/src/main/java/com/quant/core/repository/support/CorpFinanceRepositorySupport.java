@@ -1,7 +1,7 @@
 package com.quant.core.repository.support;
 
 import com.quant.core.entity.CorpFinance;
-import com.quant.core.mapping.dto.CorpFinanceSimpleDto;
+import com.quant.core.dto.FinanceSimpleDto;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
@@ -27,11 +27,11 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
     }
 
 
-    public List<CorpFinanceSimpleDto> findByFinanceSimple(Long id, List<String> orderList){
+    public List<FinanceSimpleDto> findByFinanceSimple(Long id, List<String> orderList){
 
-        List<CorpFinanceSimpleDto> results = queryFactory
+        List<FinanceSimpleDto> results = queryFactory
                 .select(
-                        Projections.constructor(CorpFinanceSimpleDto.class,
+                        Projections.constructor(FinanceSimpleDto.class,
                                 corpFinance.financeId,
                                 new CaseBuilder()
                                         .when(corpFinance.corpCode.eq("Q1")).then("1분기")

@@ -1,4 +1,4 @@
-package com.quant.core.mapping.dto;
+package com.quant.core.dto;
 
 
 import lombok.AllArgsConstructor;
@@ -8,13 +8,17 @@ import java.io.Serializable;
 
 @Data
 @AllArgsConstructor
-public class CorpRecommendDto implements Serializable {
-    String corpCode;
+public class RecommendDto implements Serializable {
 
     String corpName;
 
+    //주식 코드
     String stockCode;
+
+    //주식 가격 (종가)
+    Integer price;
 
     //매수 개수
     String count;
+
 }

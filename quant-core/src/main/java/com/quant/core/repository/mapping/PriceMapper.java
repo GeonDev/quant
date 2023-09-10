@@ -1,4 +1,4 @@
-package com.quant.core.mapping;
+package com.quant.core.repository.mapping;
 
 public interface PriceMapper {
     Integer getEndPrice();

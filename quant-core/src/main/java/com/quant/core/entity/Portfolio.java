@@ -2,6 +2,7 @@ package com.quant.core.entity;
 
 import com.quant.core.enums.AmtRange;
 import lombok.Data;
+import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 
@@ -11,8 +12,11 @@ import javax.persistence.*;
 public class Portfolio {
 
     @Id
-    @GeneratedValue(strategy= GenerationType.IDENTITY)
-    Long portfolioId;
+    @GeneratedValue(generator = "key-generator")
+    @GenericGenerator(name = "key-generator",
+            parameters = @org.hibernate.annotations.Parameter(name = "prefix", value = "PF"),
+            strategy = "com.quant.core.config.KeyGenerator")
+    String portfolioId;
 
     @ManyToOne
     @JoinColumn(name = "user_key")

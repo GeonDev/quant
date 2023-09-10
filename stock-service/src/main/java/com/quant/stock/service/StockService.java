@@ -10,8 +10,9 @@ import com.quant.core.enums.QuarterCode;
 import com.quant.core.enums.PriceType;
 import com.quant.core.enums.StockType;
 import com.quant.core.exception.InvalidRequestException;
-import com.quant.core.mapping.CorpCodeMapper;
-import com.quant.core.mapping.PriceMapper;
+import com.quant.core.repository.mapping.CorpCodeMapper;
+import com.quant.core.repository.mapping.PriceMapper;
+import com.quant.core.dto.RecommendDto;
 import com.quant.core.repository.*;
 import com.quant.core.utils.CommonUtils;
 import com.quant.core.utils.DateUtils;
@@ -67,6 +68,7 @@ public class StockService {
     private final StockPriceRepository stockPriceRepository;
     private final CorpFinanceRepository financeRepository;
     private final StockAverageRepository stockAverageRepository;
+    private final PortfolioRepository portfolioRepository;
 
     @Value("${signkey.data-go}")
     String apiKey;
@@ -666,7 +668,24 @@ public class StockService {
         return score;
     }
 
+    List<RecommendDto> getStockRecommend(LocalDate date, String portKey ){
 
+        Portfolio portfolio = portfolioRepository.findByPortfolioId(portKey);
+        if(portfolio == null){
+            throw new InvalidRequestException("일치하는 포트폴리오 없음");
+        }
+
+        List<RecommendDto> result = new ArrayList<>();
+        String[] indicator = portfolio.getIndicator().split(ApplicationConstants.SPLIT_KEY);
+
+
+
+        return result;
+    }
+
+    List<RecommendDto> setAverageIndicatorValue(List<RecommendDto>... args){
+        return null;
+    }
 
 
 }

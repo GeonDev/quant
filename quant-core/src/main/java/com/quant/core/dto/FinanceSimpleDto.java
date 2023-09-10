@@ -1,4 +1,4 @@
-package com.quant.core.mapping.dto;
+package com.quant.core.dto;
 
 
 import lombok.AllArgsConstructor;
@@ -8,7 +8,7 @@ import java.io.Serializable;
 
 @Data
 @AllArgsConstructor
-public class CorpFinanceSimpleDto implements Serializable {
+public class FinanceSimpleDto implements Serializable {
 
     Long financeId;
 

@@ -159,7 +159,7 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_TRADE (
 );
 
 CREATE TABLE IF NOT EXISTS TB_STOCK_PORTFOLIO (
-  portfolio_id bigint NOT NULL AUTO_INCREMENT,
+  portfolio_id varchar(12) NOT NULL,
   user_key varchar(12) ,
   momentum_score int ,
   stock_count int ,

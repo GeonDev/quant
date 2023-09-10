@@ -3,7 +3,7 @@ package com.quant.core.repository;
 import com.quant.core.entity.CorpInfo;
 import com.quant.core.enums.CorpState;
 
-import com.quant.core.mapping.CorpCodeMapper;
+import com.quant.core.repository.mapping.CorpCodeMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
