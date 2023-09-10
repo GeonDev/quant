@@ -101,6 +101,8 @@ public class ApiController {
     @GetMapping(value = "recommend", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getRecommendStock(@RequestParam(value = "date", required = false, defaultValue = "") String date) {
 
+        LocalDate targetDate = DateUtils.toStringLocalDate(date);
+
         return ResponseEntity.ok("");
     }
 

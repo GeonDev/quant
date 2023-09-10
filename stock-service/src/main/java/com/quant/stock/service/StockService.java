@@ -9,6 +9,7 @@ import com.quant.core.enums.CorpState;
 import com.quant.core.enums.QuarterCode;
 import com.quant.core.enums.PriceType;
 import com.quant.core.enums.StockType;
+import com.quant.core.exception.InvalidRequestException;
 import com.quant.core.mapping.CorpCodeMapper;
 import com.quant.core.mapping.PriceMapper;
 import com.quant.core.repository.*;
@@ -76,13 +77,17 @@ public class StockService {
     @Value("${file.path}")
     String filePath;
 
-
+    @Transactional
     public String setUserInfo(String email) {
-        UserInfo info = UserInfo.builder()
-                .email(email)
-                .build();
+        if(userInfoRepository.contByEmail(email) == 0){
 
-        return userInfoRepository.save(info).getUserKey();
+            UserInfo info = UserInfo.builder()
+                    .email(email)
+                    .build();
+            return userInfoRepository.save(info).getUserKey();
+        }else {
+            throw new InvalidRequestException("중복된 이메일 있음");
+        }
     }
 
 
@@ -342,7 +347,7 @@ public class StockService {
 
     public void setMultiCorpFinanceInfo(String year) {
         // 15년 이전 데이터는 지원 안함
-        if(Integer.parseInt(year) < 2015){
+        if(Integer.parseInt(year) < ApplicationConstants.LIMIT_YEAR){
             return;
         }
 
@@ -368,7 +373,7 @@ public class StockService {
             year = Integer.toString(LocalDate.now().getYear());
         }
 
-        if(Integer.parseInt(year) < 2015){
+        if(Integer.parseInt(year) < ApplicationConstants.LIMIT_YEAR){
             return;
         }
 
@@ -424,7 +429,7 @@ public class StockService {
     //단일 상장회사 재무 정보 다운로드
     public void setSingleCorpFinanceInfo(String corpCode, String year) {
         // 15년 이전 데이터는 지원 안함
-        if(Integer.parseInt(year) < 2015){
+        if(Integer.parseInt(year) < ApplicationConstants.LIMIT_YEAR){
             return;
         }
 
@@ -440,7 +445,7 @@ public class StockService {
     public void setSingleCorpFinanceInfo(String corpCode, String year, QuarterCode quarter) {
 
         // 15년 이전 데이터는 지원 안함
-       if(Integer.parseInt(year) < 2015){
+       if(Integer.parseInt(year) < ApplicationConstants.LIMIT_YEAR){
             return;
         }
 
@@ -614,7 +619,6 @@ public class StockService {
 
     @Transactional
     public void stockPriceAverage(String stockCode, LocalDate targetDate, PriceType priceType) {
-
         PageRequest pageRequest = PageRequest.of(0, priceType.getValue(), Sort.by("BAS_DT").descending());
         List<StockPrice> priceList = stockPriceRepository.findByStockCodeAndBasDtBefore(stockCode, targetDate, pageRequest);
 
@@ -661,6 +665,8 @@ public class StockService {
 
         return score;
     }
+
+
 
 
 }

@@ -166,10 +166,9 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_PORTFOLIO (
   ranges varchar(20) ,
   indicator varchar(512),
   rebalance varchar(256),
+  comment varchar(512),
   PRIMARY KEY (portfolio_id)
 );
-
-
 
 CREATE TABLE IF NOT EXISTS TB_USER_INFO (
     user_key varchar(12) NOT NULL,

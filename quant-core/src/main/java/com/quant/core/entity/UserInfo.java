@@ -6,10 +6,8 @@ import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
 
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
+import java.util.List;
 
 @Entity
 @Builder
@@ -25,5 +23,8 @@ public class UserInfo {
     String userKey;
 
     String email;
+
+    @OneToMany(mappedBy = "userInfo")
+    List<Portfolio> portfolios;
 
 }

@@ -14,7 +14,12 @@ public class Portfolio {
     @GeneratedValue(strategy= GenerationType.IDENTITY)
     Long portfolioId;
 
-    String userKey;
+    @ManyToOne
+    @JoinColumn(name = "user_key")
+    UserInfo userInfo;
+
+    //전체 투자금
+    Integer totalValue;
 
     //최소 모멘텀
     Integer momentumScore;
@@ -23,7 +28,7 @@ public class Portfolio {
     Integer stockCount;
 
     //손절 퍼센트
-    Integer lossCut ;
+    Integer lossCut;
 
     //시총 범위
     @Enumerated(EnumType.STRING)
@@ -34,4 +39,6 @@ public class Portfolio {
 
     //리벨런싱 (ex 1,6,12 ...)
     String rebalance;
+
+    String comment;
 }
