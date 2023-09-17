@@ -44,5 +44,11 @@ public class Portfolio {
     //리벨런싱 (ex 1,6,12 ...)
     String rebalance;
 
+    //구매 비율 적용
+    //현재 가격보다 아래에 있는 이동평균의 개수에 따라 구매 개수 퍼센트 적용
+    Character ratioYn;
+
     String comment;
+
+
 }

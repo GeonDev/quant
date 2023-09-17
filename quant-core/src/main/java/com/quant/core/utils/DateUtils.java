@@ -1,5 +1,7 @@
 package com.quant.core.utils;
 
+import org.springframework.util.StringUtils;
+
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -19,11 +21,17 @@ public class DateUtils {
 
 
     public static LocalDate toStringLocalDate(String str){
-        try {
-            return LocalDate.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        }catch (DateTimeException e){
-            return LocalDate.parse(str, DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+        if(StringUtils.hasText(str)){
+
+            try {
+                return LocalDate.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            }catch (DateTimeException e){
+                return LocalDate.parse(str, DateTimeFormatter.ofPattern("yyyyMMdd"));
+            }
         }
+
+        return LocalDate.now();
     }
 
     public static String toLocalDatetimeString(LocalDateTime dateTime){

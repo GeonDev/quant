@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.core.consts.ApplicationConstants;
+import com.quant.core.dto.StockDto;
 import com.quant.core.entity.*;
 import com.quant.core.enums.CorpState;
 import com.quant.core.enums.QuarterCode;
@@ -14,8 +15,10 @@ import com.quant.core.repository.mapping.CorpCodeMapper;
 import com.quant.core.repository.mapping.PriceMapper;
 import com.quant.core.dto.RecommendDto;
 import com.quant.core.repository.*;
+import com.quant.core.repository.support.CorpFinanceRepositorySupport;
 import com.quant.core.utils.CommonUtils;
 import com.quant.core.utils.DateUtils;
+import com.quant.stock.model.StockOrder;
 import com.quant.stock.model.dart.DartBase;
 import com.quant.stock.model.dart.FinanceItem;
 
@@ -69,6 +72,7 @@ public class StockService {
     private final CorpFinanceRepository financeRepository;
     private final StockAverageRepository stockAverageRepository;
     private final PortfolioRepository portfolioRepository;
+    private final CorpFinanceRepositorySupport financeSupport;
 
     @Value("${signkey.data-go}")
     String apiKey;
@@ -668,24 +672,29 @@ public class StockService {
         return score;
     }
 
-    List<RecommendDto> getStockRecommend(LocalDate date, String portKey ){
+    public List<RecommendDto> getStockRecommend(LocalDate date, String portKey ){
 
         Portfolio portfolio = portfolioRepository.findByPortfolioId(portKey);
         if(portfolio == null){
             throw new InvalidRequestException("일치하는 포트폴리오 없음");
         }
 
-        List<RecommendDto> result = new ArrayList<>();
         String[] indicator = portfolio.getIndicator().split(ApplicationConstants.SPLIT_KEY);
 
+        if(indicator.length == 0){
+            throw new InvalidRequestException("포트폴리오 조건이 없음");
+        }
 
+        List<StockOrder> orderList = new ArrayList<>();
 
-        return result;
-    }
+        for(String key : indicator ){
+            List<StockDto> temp = financeSupport.findByStockOrderSet(date, key, portfolio.getRanges() ,portfolio.getStockCount());
 
-    List<RecommendDto> setAverageIndicatorValue(List<RecommendDto>... args){
+        }
+
         return null;
     }
+
 
 
 }

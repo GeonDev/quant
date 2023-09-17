@@ -36,6 +36,7 @@ public class ApiController {
             LocalDate startDate = DateUtils.toStringLocalDate(sDate);
             LocalDate endDate = DateUtils.toStringLocalDate(eDate);
 
+            //기준일자 까지 반복
             while (!endDate.equals(startDate)){
                 stockService.getKrxDailyInfo(startDate);
                 startDate = startDate.plusDays(1);
@@ -104,9 +105,7 @@ public class ApiController {
 
         LocalDate targetDate = DateUtils.toStringLocalDate(date);
 
-
-
-        return ResponseEntity.ok("");
+        return ResponseEntity.ok(stockService.getStockRecommend(targetDate, portKey));
     }
 
 
