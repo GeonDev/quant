@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.quant.core.entity.QCorpFinance.corpFinance;
+import static com.quant.core.entity.QCorpInfo.corpInfo;
 import static com.quant.core.entity.QStockPrice.stockPrice;
 
 @Repository
@@ -32,21 +33,22 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
         this.queryFactory = queryFactory;
     }
 
-    //인디케이터와
+    //인디케이터의 조건에 맞는 주식 리스트를 추출
     public List<StockDto> findByStockOrderSet(LocalDate date, String indicator, AmtRange range, Integer limit){
         return queryFactory.select(
                 Projections.constructor(StockDto.class,
+                        corpInfo.corpName,
                         corpFinance.stockCode,
                         stockPrice.endPrice)
                 )
                 .from(corpFinance)
-                .join(stockPrice).on(stockPrice.stockCode.eq(corpFinance.stockCode))
+                .join(corpInfo).on(corpFinance.corpCode.eq(corpInfo.corpCode))
+                .leftJoin(stockPrice).on(stockPrice.stockCode.eq(corpFinance.stockCode))
                 .where(stockPrice.basDt.eq(date), rangeSet(date, range))
                 .limit(limit)
                 .orderBy(setOrderSpecifier(indicator))
                 .fetch();
     }
-
 
     public List<FinanceSimpleDto> findByFinanceSimple(Long id, List<String> orderList){
 

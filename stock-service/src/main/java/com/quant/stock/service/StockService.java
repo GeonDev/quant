@@ -55,10 +55,7 @@ import java.io.FileOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -687,13 +684,47 @@ public class StockService {
 
         List<StockOrder> orderList = new ArrayList<>();
 
+        //선별된 주식리스트에 가중치를 부여
         for(String key : indicator ){
-            List<StockDto> temp = financeSupport.findByStockOrderSet(date, key, portfolio.getRanges() ,portfolio.getStockCount());
+            List<StockDto> list = financeSupport.findByStockOrderSet(date, key, portfolio.getRanges() ,portfolio.getStockCount());
 
+            for(int i =0; i< list.size(); i++){
+                StockDto item = list.get(i);
+                boolean check = false;
+
+                for(int j = 0; j< orderList.size(); j++){
+                    if(item.getStockCode().equals(orderList.get(j).getStock().getStockCode())){
+                        StockOrder order = orderList.get(j);
+                        //가중치를 추가로 부여 한다.
+                        order.setOrder(order.getOrder() + list.size() - i);
+                        //리스트에 데이터가 있음을 체크
+                        check = true;
+                        break;
+                    }
+                }
+
+                //리스트 내부에 아이템이 없다면 추가
+                if(!check){
+                    orderList.add(StockOrder.builder()
+                                    .stock(item)
+                                    .order(list.size() - i)
+                            .build());
+                }
+            }
         }
+
+        // 내림차순 정렬
+        Collections.sort(orderList, Collections.reverseOrder());
+
+        //가중치 추가중 개수가 많아졌다면 자르기
+        orderList.subList(0,portfolio.getStockCount()-1);
+
+
 
         return null;
     }
+
+
 
 
 

@@ -10,6 +10,8 @@ import java.io.Serializable;
 @AllArgsConstructor
 public class StockDto implements Serializable {
 
+    String corpName;
+
     String stockCode;
 
     Integer endPrice;

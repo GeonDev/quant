@@ -1,5 +1,6 @@
 package com.quant.stock.model;
 
+import com.quant.core.dto.StockDto;
 import lombok.*;
 
 @Getter
@@ -9,7 +10,7 @@ import lombok.*;
 @AllArgsConstructor
 public class StockOrder implements Comparable<StockOrder>{
 
-    StockOrder stock;
+    StockDto stock;
 
     Integer order;
 
