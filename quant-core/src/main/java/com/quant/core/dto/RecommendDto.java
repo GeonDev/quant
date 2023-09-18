@@ -2,11 +2,13 @@ package com.quant.core.dto;
 
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 
 import java.io.Serializable;
 
 @Data
+@Builder
 @AllArgsConstructor
 public class RecommendDto implements Serializable {
 
@@ -19,6 +21,6 @@ public class RecommendDto implements Serializable {
     Integer price;
 
     //매수 개수
-    String count;
+    Integer count;
 
 }

@@ -716,12 +716,26 @@ public class StockService {
         // 내림차순 정렬
         Collections.sort(orderList, Collections.reverseOrder());
 
-        //가중치 추가중 개수가 많아졌다면 자르기
-        orderList.subList(0,portfolio.getStockCount()-1);
+        //가중치 추가를 하면서 개수가 많아졌다면 자르기
+        if(orderList.size() > portfolio.getStockCount()){
+            orderList = orderList.subList(0,portfolio.getStockCount()-1);
+        }
 
+        //현재 가격, 포트폴리오 상 자본금을 고려하여 구매 개수 설정
+        //
+        List<RecommendDto> result = new ArrayList<>();
+        int payForStock = portfolio.getTotalValue()/portfolio.getStockCount();
+        for(StockOrder temp : orderList ){
 
+            result.add(RecommendDto.builder()
+                            .stockCode(temp.getStock().getStockCode())
+                            .corpName(temp.getStock().getCorpName())
+                            .price(temp.getStock().getEndPrice())
+                            .count( payForStock/temp.getStock().getEndPrice())
+                    .build() );
+        }
 
-        return null;
+        return result;
     }
 
 
