@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,14 +23,14 @@ public class ApiController {
     private final StockService stockService;
 
 
-    @GetMapping(value = "user", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "user", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity setUser(@RequestParam(value = "email") String email) {
         return ResponseEntity.ok("User key : " + stockService.setUserInfo(email));
     }
 
 
-    @GetMapping(value = "price", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity getStockPrice(@RequestParam(value = "sDate", required = false, defaultValue = "") String sDate,
+    @PostMapping(value = "price", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity setStockPrice(@RequestParam(value = "sDate", required = false, defaultValue = "") String sDate,
                                         @RequestParam(value = "eDate", required = false, defaultValue = "") String eDate) {
 
         if (StringUtils.hasText(sDate) && StringUtils.hasText(eDate)){
@@ -51,15 +52,14 @@ public class ApiController {
     }
 
 
-    @GetMapping(value = "code", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity getCorpCode() {
+    @PostMapping(value = "code", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity setCorpCode() {
         stockService.getDartCorpCodeInfo();
         return ResponseEntity.ok("SET CODE");
     }
 
 
-
-    @GetMapping(value = "fin", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "fin", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getFinance(@RequestParam(value = "corpCode", required = false, defaultValue = "") String corpCode,
                                      @RequestParam(value = "quarter", required = false) QuarterCode quarter,
                                      @RequestParam(value = "year", required = false, defaultValue = "") String year) {
@@ -80,7 +80,8 @@ public class ApiController {
         return ResponseEntity.ok("SET FINANCE");
     }
 
-    @GetMapping(value = "average", produces = MediaType.APPLICATION_JSON_VALUE)
+
+    @PostMapping(value = "average", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getAveragePrice(@RequestParam(value = "sDate", required = false, defaultValue = "") String sDate,
                                           @RequestParam(value = "eDate", required = false, defaultValue = "") String eDate) {
         if (StringUtils.hasText(sDate) && StringUtils.hasText(eDate)){
@@ -98,6 +99,7 @@ public class ApiController {
         }
         return ResponseEntity.ok("SET AVERAGE");
     }
+
 
     @GetMapping(value = "recommend", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getRecommendStock(@RequestParam(value = "date", required = false, defaultValue = "") String date,

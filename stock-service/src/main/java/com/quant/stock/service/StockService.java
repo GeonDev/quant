@@ -36,6 +36,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
@@ -82,7 +83,7 @@ public class StockService {
 
     @Transactional
     public String setUserInfo(String email) {
-        if(userInfoRepository.contByEmail(email) == 0){
+        if(userInfoRepository.countByEmail(email) == 0){
 
             UserInfo info = UserInfo.builder()
                     .email(email)
@@ -95,6 +96,7 @@ public class StockService {
 
 
     //주식 시장 활성일 체크 -> 활성일 일 경우 주식 시세 받기
+    @Async
     public void getKrxDailyInfo(LocalDate targetDate) {
         //주말은 무시
         if(targetDate.getDayOfWeek().getValue() == 0 || targetDate.getDayOfWeek().getValue() == 6 ){
@@ -229,7 +231,11 @@ public class StockService {
                             price.setMarketTotalAmt(Long.parseLong(item.get("mrktTotAmt").toString()));
 
                             getMomentumScore(price.getEndPrice(), price.getStockCode());
-                            priceList.add(price);
+
+                            //FIXME 중복 데이터 저장 방지 - 성능 개선 필요
+                            if(stockPriceRepository.countByStockCodeAndBasDt(price.getStockCode(), price.getBasDt()) == 0 ){
+                                priceList.add(price);
+                            }
                         }
                         currentCount += 1;
                     }

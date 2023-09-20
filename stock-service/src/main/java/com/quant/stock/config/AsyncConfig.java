@@ -11,24 +11,14 @@ import java.util.concurrent.Executor;
 @EnableAsync
 public class AsyncConfig extends AsyncConfigurerSupport {
 
-    @Value("${signkey.data-go}")
-    String poolSize;
-
-    String maxPoolSize;
-
-
-    String capacitySize;
-
-    String threadName;
-
 
     @Override
     public Executor getAsyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(5);
         executor.setMaxPoolSize(30);
-        executor.setQueueCapacity(Integer.parseInt(capacitySize));
-        executor.setThreadNamePrefix(threadName);
+        executor.setQueueCapacity(1000);
+        executor.setThreadNamePrefix("Stock-");
         executor.initialize();
         return executor;
     }

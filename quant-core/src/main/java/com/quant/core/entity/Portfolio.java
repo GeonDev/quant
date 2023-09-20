@@ -2,6 +2,7 @@ package com.quant.core.entity;
 
 import com.quant.core.enums.AmtRange;
 import lombok.Data;
+import lombok.ToString;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
@@ -20,6 +21,7 @@ public class Portfolio {
 
     @ManyToOne
     @JoinColumn(name = "user_key")
+    @ToString.Exclude
     UserInfo userInfo;
 
     //전체 투자금
