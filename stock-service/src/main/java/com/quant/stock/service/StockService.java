@@ -6,10 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.core.consts.ApplicationConstants;
 import com.quant.core.dto.StockDto;
 import com.quant.core.entity.*;
-import com.quant.core.enums.CorpState;
-import com.quant.core.enums.QuarterCode;
-import com.quant.core.enums.PriceType;
-import com.quant.core.enums.StockType;
+import com.quant.core.enums.*;
 import com.quant.core.exception.InvalidRequestException;
 import com.quant.core.repository.mapping.CorpCodeMapper;
 import com.quant.core.repository.mapping.PriceMapper;
@@ -116,7 +113,7 @@ public class StockService {
                 getStockPrice(StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate), 1, 0, 1);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("{}" ,e);
         }
     }
 
@@ -249,7 +246,7 @@ public class StockService {
 
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("{}" ,e);
         }
     }
 
@@ -343,7 +340,7 @@ public class StockService {
             corpInfoRepository.saveAll(unCheckedCorpList);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("{}" ,e);
         }
 
     }
@@ -354,6 +351,8 @@ public class StockService {
         return node.getTextContent().trim();
     }
 
+    // 다중회사 재무 제표 다운로드
+    @Async
     public void setMultiCorpFinanceInfo(String year) {
         // 15년 이전 데이터는 지원 안함
         if(Integer.parseInt(year) < ApplicationConstants.LIMIT_YEAR){
@@ -364,8 +363,9 @@ public class StockService {
         int pageSize = (int)Math.ceil(totalCount/100.0);
 
         for(int i =0; i< pageSize; i++){
+            //Dart 파라메터의 최대 parm 개수 : 100
             Pageable pageable = PageRequest.of(i, 100);
-            Page<CorpCodeMapper> codePage = corpInfoRepository.findByState(pageable, CorpState.ACTIVE);
+            Page<CorpCodeMapper> codePage = corpInfoRepository.findByStateAndCorpTypeIsNull(pageable, CorpState.ACTIVE);
 
             setMultiCorpFinanceInfo(codePage.getContent(), year, QuarterCode.Q1);
             setMultiCorpFinanceInfo(codePage.getContent(), year, QuarterCode.Q2);
@@ -429,13 +429,14 @@ public class StockService {
                 financeRepository.saveAll(financeList);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("{}" ,e);
         }
 
     }
 
 
     //단일 상장회사 재무 정보 다운로드
+    @Async
     public void setSingleCorpFinanceInfo(String corpCode, String year) {
         // 15년 이전 데이터는 지원 안함
         if(Integer.parseInt(year) < ApplicationConstants.LIMIT_YEAR){
@@ -486,6 +487,17 @@ public class StockService {
                     List<CorpFinance> financeList = null;
                     List<FinanceItem> financeSrcList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {});
 
+                    //재무제표에 한국이 아닌 데이터 삭제
+                    for (Iterator<FinanceItem> iter = financeSrcList.iterator(); iter.hasNext(); ) {
+                        FinanceItem item = iter.next();
+                        if (item.getCurrency().equals("CNY")) {
+                            CorpInfo temp = corpInfoRepository.findTopByCorpCode(item.getCorp_code());
+                            temp.setCorpType(CorpType.CHINA);
+                            corpInfoRepository.save(temp);
+                            iter.remove();
+                        }
+                    }
+
                     financeList.add(setFinanceInfo(corpCode, year, quarter,  financeSrcList));
 
                     financeRepository.saveAll(financeList);
@@ -493,7 +505,7 @@ public class StockService {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("{}" ,e);
         }
     }
 
@@ -514,6 +526,7 @@ public class StockService {
 
         CorpFinance finance = new CorpFinance();
 
+        finance.setReprtCode(financeSrcList.get(0).getReprt_code());
         finance.setRceptNo(financeSrcList.get(0).getRcept_no());
         finance.setYearCode(year);
         finance.setStockCode(financeSrcList.get(0).getStock_code());
@@ -610,6 +623,7 @@ public class StockService {
 
 
     //주식의 가격 평균 배치
+    @Async
     public void setStockPriceAverage(LocalDate targetDate) {
         if (targetDate == null) {
             targetDate = LocalDate.now();
@@ -728,7 +742,6 @@ public class StockService {
         }
 
         //현재 가격, 포트폴리오 상 자본금을 고려하여 구매 개수 설정
-        //
         List<RecommendDto> result = new ArrayList<>();
         int payForStock = portfolio.getTotalValue()/portfolio.getStockCount();
         for(StockOrder temp : orderList ){
@@ -743,9 +756,4 @@ public class StockService {
 
         return result;
     }
-
-
-
-
-
 }

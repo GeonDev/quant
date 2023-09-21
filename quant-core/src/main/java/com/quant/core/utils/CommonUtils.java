@@ -11,12 +11,11 @@ import java.util.zip.ZipInputStream;
 
 public class CommonUtils {
 
-    public static void unZip(String ZipFilePath, String FilePath) {
+    public static void unZip(String ZipFilePath, String FilePath) throws IOException{
         File Destination_Directory = new File(FilePath);
         if (!Destination_Directory.exists()) {
             Destination_Directory.mkdir();
         }
-        try {
 
             ZipInputStream Zip_Input_Stream = new ZipInputStream(new FileInputStream(ZipFilePath));
             ZipEntry Zip_Entry = Zip_Input_Stream.getNextEntry();
@@ -35,10 +34,6 @@ public class CommonUtils {
                 Zip_Entry = Zip_Input_Stream.getNextEntry();
             }
             Zip_Input_Stream.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
     }
 
     private static void extractFile(ZipInputStream Zip_Input_Stream, String File_Path) throws IOException {

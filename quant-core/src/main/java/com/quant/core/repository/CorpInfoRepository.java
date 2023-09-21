@@ -19,6 +19,8 @@ public interface CorpInfoRepository extends JpaRepository<CorpInfo, String> {
 
     List<CorpInfo> findByCheckDtBefore(LocalDate date);
 
-    Page<CorpCodeMapper> findByState(Pageable pageable, CorpState state);
+    Page<CorpCodeMapper> findByStateAndCorpTypeIsNull(Pageable pageable, CorpState state);
+
+    CorpInfo findTopByCorpCode(String code);
 
 }

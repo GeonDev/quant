@@ -16,6 +16,8 @@ public class CorpFinance implements Serializable {
     @GeneratedValue(strategy= GenerationType.IDENTITY)
     Long financeId;
 
+    String reprtCode;
+
     //분기코드
     String rceptNo;
 
