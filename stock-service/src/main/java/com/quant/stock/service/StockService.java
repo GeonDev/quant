@@ -322,6 +322,13 @@ public class StockService {
 
                                 //체크 일자 업데이트
                                 code.setCheckDt(LocalDate.now());
+
+                                if(code.getCorpName().contains("은행")){
+                                    code.setCorpType(CorpType.BANK);
+                                }else if(code.getCorpName().contains("지주") || code.getCorpName().contains("홀딩스") ){
+                                    code.setCorpType(CorpType.HOLDING);
+                                }
+
                                 codeList.add(code);
                             }
                         }
@@ -421,6 +428,9 @@ public class StockService {
                     for (CorpCodeMapper corpCode : infoList) {
                         List<FinanceItem> financeItems = setFinanceParser(financeOrigin,corpCode.getCorpCode());
                         if(financeItems.size() > 0){
+
+                            //재무제표에 한국이 아닌 데이터 삭제
+                            checkChinaStock(financeItems);
                             financeList.add(setFinanceInfo(corpCode.getCorpCode(), year, quarter, financeItems ));
                         }
                     }
@@ -432,6 +442,28 @@ public class StockService {
             logger.error("{}" ,e);
         }
 
+    }
+
+    private void checkChinaStock(List<FinanceItem> financeItems) {
+        for (Iterator<FinanceItem> iter = financeItems.iterator(); iter.hasNext(); ) {
+            FinanceItem item = iter.next();
+            if (item.getCurrency().equals("CNY")) {
+                CorpInfo temp = corpInfoRepository.findTopByCorpCode(item.getCorp_code());
+                temp.setCorpType(CorpType.CHINA);
+                corpInfoRepository.save(temp);
+                iter.remove();
+            }else if(item.getCurrency().equals("JPY")){
+                CorpInfo temp = corpInfoRepository.findTopByCorpCode(item.getCorp_code());
+                temp.setCorpType(CorpType.JAPAN);
+                corpInfoRepository.save(temp);
+                iter.remove();
+            }else if(!item.getCurrency().equals("KRW")) {
+                CorpInfo temp = corpInfoRepository.findTopByCorpCode(item.getCorp_code());
+                temp.setCorpType(CorpType.ETC);
+                corpInfoRepository.save(temp);
+                iter.remove();
+            }
+        }
     }
 
 
@@ -488,15 +520,7 @@ public class StockService {
                     List<FinanceItem> financeSrcList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {});
 
                     //재무제표에 한국이 아닌 데이터 삭제
-                    for (Iterator<FinanceItem> iter = financeSrcList.iterator(); iter.hasNext(); ) {
-                        FinanceItem item = iter.next();
-                        if (item.getCurrency().equals("CNY")) {
-                            CorpInfo temp = corpInfoRepository.findTopByCorpCode(item.getCorp_code());
-                            temp.setCorpType(CorpType.CHINA);
-                            corpInfoRepository.save(temp);
-                            iter.remove();
-                        }
-                    }
+                    checkChinaStock(financeSrcList);
 
                     financeList.add(setFinanceInfo(corpCode, year, quarter,  financeSrcList));
 

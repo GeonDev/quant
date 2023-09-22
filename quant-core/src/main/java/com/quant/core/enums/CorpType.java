@@ -8,7 +8,9 @@ import lombok.Getter;
 public enum CorpType {
     BANK("은행주"),
     CHINA("중국주식"),
-    HOLDING("지주사");
+    JAPAN("일본주식"),
+    HOLDING("지주사"),
+    ETC("기타");
 
     private String desc;
 

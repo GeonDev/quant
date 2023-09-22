@@ -43,8 +43,8 @@ signkey:
   dart: c207c7fb3fa4aecf7e9012257b17012b5949dff8
 
 file:
-  path: /Users/kada/data/dart/
-  #path: /Users/jnote/data/dart/
+  #path: /Users/kada/data/dart/
+  path: /Users/jnote/data/dart/
 
 cron:
   krx:
@@ -53,7 +53,7 @@ cron:
 
 quant:
   allow-ip: 0:0:0:0:0:0:0:1,127.0.0.1
-  bosting: 11,12,1,2,3,4
+  boosting: 11,12,1,2,3,4
 
 
 ---
@@ -82,7 +82,7 @@ signkey:
   dart: c207c7fb3fa4aecf7e9012257b17012b5949dff8
 
 file:
-  path: /Users/kada/data/dart/
+  path: /data/dart/
 
 cron:
   krx:
@@ -91,5 +91,5 @@ cron:
 
 quant:
   allow-ip: 0:0:0:0:0:0:0:1
-  bosting: 11,12,1,2,3,4
+  boosting: 11,12,1,2,3,4
 ---
