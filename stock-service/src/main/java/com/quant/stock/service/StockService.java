@@ -323,7 +323,7 @@ public class StockService {
                                 //체크 일자 업데이트
                                 code.setCheckDt(LocalDate.now());
 
-                                if(code.getCorpName().contains("은행")){
+                                if(code.getCorpName().contains("은행") || code.getCorpName().contains("금융")){
                                     code.setCorpType(CorpType.BANK);
                                 }else if(code.getCorpName().contains("지주") || code.getCorpName().contains("홀딩스") ){
                                     code.setCorpType(CorpType.HOLDING);
@@ -374,10 +374,12 @@ public class StockService {
             Pageable pageable = PageRequest.of(i, 100);
             Page<CorpCodeMapper> codePage = corpInfoRepository.findByStateAndCorpTypeIsNull(pageable, CorpState.ACTIVE);
 
-            setMultiCorpFinanceInfo(codePage.getContent(), year, QuarterCode.Q1);
-            setMultiCorpFinanceInfo(codePage.getContent(), year, QuarterCode.Q2);
-            setMultiCorpFinanceInfo(codePage.getContent(), year, QuarterCode.Q3);
-            setMultiCorpFinanceInfo(codePage.getContent(), year, QuarterCode.Q4);
+            if(codePage.getNumberOfElements() > 0 ){
+                setMultiCorpFinanceInfo(codePage.getContent(), year, QuarterCode.Q1);
+                setMultiCorpFinanceInfo(codePage.getContent(), year, QuarterCode.Q2);
+                setMultiCorpFinanceInfo(codePage.getContent(), year, QuarterCode.Q3);
+                setMultiCorpFinanceInfo(codePage.getContent(), year, QuarterCode.Q4);
+            }
         }
     }
 
@@ -390,6 +392,10 @@ public class StockService {
         }
 
         if(Integer.parseInt(year) < ApplicationConstants.LIMIT_YEAR){
+            return;
+        }
+
+        if(infoList.size() == 0){
             return;
         }
 
@@ -556,17 +562,17 @@ public class StockService {
         finance.setStockCode(financeSrcList.get(0).getStock_code());
         finance.setCorpCode(financeSrcList.get(0).getCorp_code());
 
+        finance.setStartDt(DateUtils.toStringLocalDate(financeSrcList.get(0).getFrmtrm_dt().replace(" 현재","")));
+        finance.setEndDt(DateUtils.toStringLocalDate(financeSrcList.get(0).getThstrm_dt().replace(" 현재","")));
+
+
         for (FinanceItem item : financeSrcList) {
             if (item.getFs_div().equals("OFS")) {
-                Long value = Long.parseLong(item.getThstrm_amount().replace(",", ""));
+                Long value = Long.parseLong(item.getThstrm_amount().replaceAll(",", ""));
 
                 if (item.getSj_div().equals("IS")) {
                     if (item.getAccount_nm().equals("매출액")) {
                         finance.setRevenue(value);
-
-                        String[] data = item.getThstrm_dt().replace(".", "").split(" ~ ");
-                        finance.setStartDt(DateUtils.toStringLocalDate(data[0]));
-                        finance.setEndDt(DateUtils.toStringLocalDate(data[1]));
 
                     } else if (item.getAccount_nm().equals("영업이익")) {
                         finance.setOperatingProfit(value);
