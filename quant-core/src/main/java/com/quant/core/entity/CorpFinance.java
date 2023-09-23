@@ -12,15 +12,12 @@ import java.time.LocalDate;
 @Table(name = "TB_CORP_FINANCE")
 public class CorpFinance implements Serializable {
 
+    //재무 재표 코드
     @Id
-    @GeneratedValue(strategy= GenerationType.IDENTITY)
-    Long financeId;
+    String rceptNo;
 
     //분기 코드
     String reprtCode;
-
-    //재무 재표 코드
-    String rceptNo;
 
     String corpCode;
 

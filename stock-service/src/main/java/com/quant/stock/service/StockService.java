@@ -431,7 +431,6 @@ public class StockService {
                     for (CorpCodeMapper corpCode : infoList) {
                         List<FinanceItem> financeItems = setFinanceParser(financeOrigin,corpCode.getCorpCode());
                         if(financeItems.size() > 0){
-
                             //재무제표에 한국이 아닌 데이터 삭제
                             checkChinaStock(financeItems);
 
@@ -525,27 +524,24 @@ public class StockService {
             DartBase<FinanceItem> response = mapper.readValue(result.getBody(), DartBase.class);
 
             if (response.getStatus().equals("000")) {
-
                 //같은 기간 데이터가 있는지 확인
-                if (financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getCode(), year) == null) {
+                List<CorpFinance> financeList = null;
+                List<FinanceItem> financeSrcList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {});
 
-                    List<CorpFinance> financeList = null;
-                    List<FinanceItem> financeSrcList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {});
+                //재무제표에 한국이 아닌 데이터 삭제
+                checkChinaStock(financeSrcList);
 
-                    //재무제표에 한국이 아닌 데이터 삭제
-                    checkChinaStock(financeSrcList);
-
-                    CorpFinance finance = setFinanceInfo(corpCode, year, quarter,  financeSrcList);
-                    if(finance.getRevenue() != null){
-                        financeList.add(finance);
-                    }
-
-                    financeRepository.saveAll(financeList);
+                CorpFinance finance = setFinanceInfo(corpCode, year, quarter,  financeSrcList);
+                if(finance.getRevenue() != null){
+                    financeList.add(finance);
                 }
+
+                financeRepository.saveAll(financeList);
             }
 
         } catch (Exception e) {
             Logger.error("{}" ,e);
+            e.printStackTrace();
         }
     }
 
@@ -577,7 +573,7 @@ public class StockService {
 
 
         for (FinanceItem item : financeSrcList) {
-            if (item.getFs_div().equals("OFS")) {
+            if (item.getFs_div().equalsIgnoreCase("OFS")) {
                 Long value = 0l;
 
                 if(StringUtils.hasText(item.getThstrm_amount())){
@@ -589,7 +585,7 @@ public class StockService {
                         value = Long.parseLong(item.getThstrm_amount().replaceAll(",", ""));
                     }
 
-                    if (item.getSj_div().equals("IS")) {
+                    if (item.getSj_div().equalsIgnoreCase("IS")) {
                         if (item.getAccount_nm().equals("매출액")) {
                             finance.setRevenue(value);
 
@@ -598,7 +594,7 @@ public class StockService {
                         } else if (item.getAccount_nm().equals("당기순이익")) {
                             finance.setNetIncome(value);
                         }
-                    } else if (item.getSj_div().equals("BS")) {
+                    } else if (item.getSj_div().equalsIgnoreCase("BS")) {
                         if (item.getAccount_nm().equals("부채총계")) {
                             finance.setTotalDebt(value);
                         } else if (item.getAccount_nm().equals("자본금")) {
@@ -611,14 +607,15 @@ public class StockService {
                             finance.setTotalAssets(value);
                         }
                     }
-
-                    //YOY, QoQ 계산
-                    setFinanceRatio(corpCode, year, quarter, finance);
-                    //PSR PER 계산
-                    setFinanceIndicators(finance);
                 }
             }
         }
+
+        //YOY, QoQ 계산
+        setFinanceRatio(corpCode, year, quarter, finance);
+        //PSR PER 계산
+        setFinanceIndicators(finance);
+
         return finance;
     }
 
@@ -647,7 +644,7 @@ public class StockService {
     }
 
     private void setFinanceGrowth(CorpFinance bqFinance, CorpFinance finance, PriceMapper nowPrice) {
-        if(bqFinance != null){
+        if(bqFinance != null && nowPrice != null){
             Double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue())/ nowPrice.getMarketTotalAmt()) * 100;
             finance.setQOQ(qoq);
 

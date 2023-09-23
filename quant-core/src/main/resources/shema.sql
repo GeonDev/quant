@@ -95,9 +95,8 @@ CREATE TABLE IF NOT EXISTS TB_CORP_INFO (
 
 
 CREATE TABLE IF NOT EXISTS TB_CORP_FINANCE (
-  finance_id bigint NOT NULL AUTO_INCREMENT,
+  rcept_no varchar(20) NOT NULL,
   reprt_code varchar(20),
-  rcept_no varchar(20),
   corp_code varchar(11) ,
   stock_code varchar(11) ,
   year_code varchar(4),
@@ -119,7 +118,7 @@ CREATE TABLE IF NOT EXISTS TB_CORP_FINANCE (
   QOQ double DEFAULT 0,
   OPGE double DEFAULT 0,
   PGE double DEFAULT 0,
-  PRIMARY KEY (finance_id)
+  PRIMARY KEY (rcept_no)
 );
 
 
