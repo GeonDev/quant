@@ -437,7 +437,12 @@ public class StockService {
 
                             //재무제표에 한국이 아닌 데이터 삭제
                             checkChinaStock(financeItems);
-                            financeList.add(setFinanceInfo(corpCode.getCorpCode(), year, quarter, financeItems ));
+
+                            CorpFinance finance = setFinanceInfo(corpCode.getCorpCode(), year, quarter, financeItems);
+                            if(finance.getRevenue() != null){
+                                financeList.add(finance);
+                            }
+
                         }
                     }
                 }
@@ -528,7 +533,10 @@ public class StockService {
                     //재무제표에 한국이 아닌 데이터 삭제
                     checkChinaStock(financeSrcList);
 
-                    financeList.add(setFinanceInfo(corpCode, year, quarter,  financeSrcList));
+                    CorpFinance finance = setFinanceInfo(corpCode, year, quarter,  financeSrcList);
+                    if(finance.getRevenue() != null){
+                        financeList.add(finance);
+                    }
 
                     financeRepository.saveAll(financeList);
                 }
@@ -552,7 +560,7 @@ public class StockService {
         return financeList;
     }
 
-    private CorpFinance setFinanceInfo(String corpCode, String year, QuarterCode quarter, List<FinanceItem> financeSrcList) {
+    private CorpFinance setFinanceInfo(String corpCode, String year, QuarterCode quarter, List<FinanceItem> financeSrcList) throws RuntimeException {
 
         CorpFinance finance = new CorpFinance();
 
@@ -568,35 +576,45 @@ public class StockService {
 
         for (FinanceItem item : financeSrcList) {
             if (item.getFs_div().equals("OFS")) {
-                Long value = Long.parseLong(item.getThstrm_amount().replaceAll(",", ""));
+                Long value = 0l;
 
-                if (item.getSj_div().equals("IS")) {
-                    if (item.getAccount_nm().equals("매출액")) {
-                        finance.setRevenue(value);
+                if(StringUtils.hasText(item.getThstrm_amount())){
+                    //음수 파싱 중 문제가 발생하는 경우가 있어 음수 체크
+                    if(item.getThstrm_amount().startsWith("-")){
+                        value = Long.parseLong(item.getThstrm_amount().replaceFirst("-","").replaceAll(",", ""));
+                        value = value * -1l;
+                    }else {
+                        value = Long.parseLong(item.getThstrm_amount().replaceAll(",", ""));
+                    }
 
-                    } else if (item.getAccount_nm().equals("영업이익")) {
-                        finance.setOperatingProfit(value);
-                    } else if (item.getAccount_nm().equals("당기순이익")) {
-                        finance.setNetIncome(value);
+                    if (item.getSj_div().equals("IS")) {
+                        if (item.getAccount_nm().equals("매출액")) {
+                            finance.setRevenue(value);
+
+                        } else if (item.getAccount_nm().equals("영업이익")) {
+                            finance.setOperatingProfit(value);
+                        } else if (item.getAccount_nm().equals("당기순이익")) {
+                            finance.setNetIncome(value);
+                        }
+                    } else if (item.getSj_div().equals("BS")) {
+                        if (item.getAccount_nm().equals("부채총계")) {
+                            finance.setTotalDebt(value);
+                        } else if (item.getAccount_nm().equals("자본금")) {
+                            finance.setCapital(value);
+                        } else if (item.getAccount_nm().equals("이익잉여금")) {
+                            finance.setEarnedSurplus(value);
+                        } else if (item.getAccount_nm().equals("자본총계")) {
+                            finance.setTotalEquity(value);
+                        } else if (item.getAccount_nm().equals("자산총계")) {
+                            finance.setTotalAssets(value);
+                        }
                     }
-                } else if (item.getSj_div().equals("BS")) {
-                    if (item.getAccount_nm().equals("부채총계")) {
-                        finance.setTotalDebt(value);
-                    } else if (item.getAccount_nm().equals("자본금")) {
-                        finance.setCapital(value);
-                    } else if (item.getAccount_nm().equals("이익잉여금")) {
-                        finance.setEarnedSurplus(value);
-                    } else if (item.getAccount_nm().equals("자본총계")) {
-                        finance.setTotalEquity(value);
-                    } else if (item.getAccount_nm().equals("자산총계")) {
-                        finance.setTotalAssets(value);
-                    }
+
+                    //YOY, QoQ 계산
+                    setFinanceRatio(corpCode, year, quarter, finance);
+                    //PSR PER 계산
+                    setFinanceIndicators(finance);
                 }
-
-                //YOY, QoQ 계산
-                setFinanceRatio(corpCode, year, quarter, finance);
-                //PSR PER 계산
-                setFinanceIndicators(finance);
             }
         }
         return finance;
