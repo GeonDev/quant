@@ -20,13 +20,11 @@ import com.quant.stock.model.dart.DartBase;
 import com.quant.stock.model.dart.FinanceItem;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -39,6 +37,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.tinylog.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -55,11 +54,9 @@ import java.net.URLDecoder;
 import java.time.LocalDate;
 import java.util.*;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StockService {
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final UserInfoRepository userInfoRepository;
     private final CorpInfoRepository corpInfoRepository;
@@ -113,7 +110,7 @@ public class StockService {
                 getStockPrice(StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate), 1, 0, 1);
             }
         } catch (Exception e) {
-            logger.error("{}" ,e);
+            Logger.error("{}" ,e);
         }
     }
 
@@ -246,7 +243,7 @@ public class StockService {
 
             }
         } catch (Exception e) {
-            logger.error("{}" ,e);
+            Logger.error("{}" ,e);
         }
     }
 
@@ -347,7 +344,7 @@ public class StockService {
             corpInfoRepository.saveAll(unCheckedCorpList);
 
         } catch (Exception e) {
-            logger.error("{}" ,e);
+            Logger.error("{}" ,e);
         }
 
     }
@@ -450,7 +447,7 @@ public class StockService {
                 financeRepository.saveAll(financeList);
             }
         } catch (Exception e) {
-            logger.error("{}" ,e);
+            Logger.error("{}" ,e);
         }
 
     }
@@ -466,6 +463,11 @@ public class StockService {
             }else if(item.getCurrency().equals("JPY")){
                 CorpInfo temp = corpInfoRepository.findTopByCorpCode(item.getCorp_code());
                 temp.setCorpType(CorpType.JAPAN);
+                corpInfoRepository.save(temp);
+                iter.remove();
+            }else if(item.getCurrency().equals("JPY")){
+                CorpInfo temp = corpInfoRepository.findTopByCorpCode(item.getCorp_code());
+                temp.setCorpType(CorpType.USD);
                 corpInfoRepository.save(temp);
                 iter.remove();
             }else if(!item.getCurrency().equals("KRW")) {
@@ -543,7 +545,7 @@ public class StockService {
             }
 
         } catch (Exception e) {
-            logger.error("{}" ,e);
+            Logger.error("{}" ,e);
         }
     }
 

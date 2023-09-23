@@ -9,6 +9,7 @@ public enum CorpType {
     BANK("은행주"),
     CHINA("중국주식"),
     JAPAN("일본주식"),
+    USD("미국주식"),
     HOLDING("지주사"),
     ETC("기타");
 
