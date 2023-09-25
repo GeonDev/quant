@@ -77,13 +77,13 @@ public class StockService {
 
     @Transactional
     public String setUserInfo(String email) {
-        if(userInfoRepository.countByEmail(email) == 0){
+        if (userInfoRepository.countByEmail(email) == 0) {
 
             UserInfo info = UserInfo.builder()
                     .email(email)
                     .build();
             return userInfoRepository.save(info).getUserKey();
-        }else {
+        } else {
             throw new InvalidRequestException("중복된 이메일 있음");
         }
     }
@@ -93,7 +93,7 @@ public class StockService {
     @Async
     public void getKrxDailyInfo(LocalDate targetDate) {
         //주말은 무시
-        if(targetDate.getDayOfWeek().getValue() == 0 || targetDate.getDayOfWeek().getValue() == 6 ){
+        if (targetDate.getDayOfWeek().getValue() == 0 || targetDate.getDayOfWeek().getValue() == 6) {
             return;
         }
 
@@ -105,17 +105,17 @@ public class StockService {
         }
 
         try {
-            if(!checkIsDayOff(targetDate)){
+            if (!checkIsDayOff(targetDate)) {
                 getStockPrice(StockType.KOSPI.name(), DateUtils.toLocalDateString(targetDate), 1, 0, 1);
                 getStockPrice(StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate), 1, 0, 1);
             }
         } catch (Exception e) {
-            Logger.error("{}" ,e);
+            Logger.error("{}", e);
         }
     }
 
     //공휴일 체크 기능
-    private boolean checkIsDayOff(LocalDate targetDate ) throws UnsupportedEncodingException, ParseException {
+    private boolean checkIsDayOff(LocalDate targetDate) throws UnsupportedEncodingException, ParseException {
         boolean isDayOff = false;
 
         UriComponents uri = UriComponentsBuilder
@@ -139,7 +139,7 @@ public class StockService {
         JSONObject header = (JSONObject) response.get("header");
         JSONObject body = (JSONObject) response.get("body");
 
-        
+
         if (!body.get("items").toString().equals("")) {
             JSONObject items = (JSONObject) body.get("items");
 
@@ -157,7 +157,7 @@ public class StockService {
                         }
                     }
                 }
-            }catch (ClassCastException e ){
+            } catch (ClassCastException e) {
                 //공휴일이 1개만 내려올때
                 JSONObject item = (JSONObject) items.get("item");
                 if (DateUtils.toStringLocalDate(item.get("locdate").toString()).isEqual(targetDate)) {
@@ -210,7 +210,7 @@ public class StockService {
                         JSONObject item = (JSONObject) itemList.get(i);
                         StockPrice price = new StockPrice();
 
-                        if(!item.get("itmsNm").toString().contains("스팩")){
+                        if (!item.get("itmsNm").toString().contains("스팩")) {
                             price.setStockCode(item.get("srtnCd").toString());
                             price.setMarketCode(marketType);
                             price.setBasDt(DateUtils.toStringLocalDate(basDt));
@@ -227,7 +227,7 @@ public class StockService {
                             getMomentumScore(price.getEndPrice(), price.getStockCode());
 
                             //FIXME 중복 데이터 저장 방지 - 성능 개선 필요
-                            if(stockPriceRepository.countByStockCodeAndBasDt(price.getStockCode(), price.getBasDt()) == 0 ){
+                            if (stockPriceRepository.countByStockCodeAndBasDt(price.getStockCode(), price.getBasDt()) == 0) {
                                 priceList.add(price);
                             }
                         }
@@ -236,14 +236,14 @@ public class StockService {
 
                     stockPriceRepository.saveAll(priceList);
 
-                    if(currentCount < totalCount ){
+                    if (currentCount < totalCount) {
                         getStockPrice(marketType, basDt, pageNum + 1, totalCount, currentCount + 1);
                     }
                 }
 
             }
         } catch (Exception e) {
-            Logger.error("{}" ,e);
+            Logger.error("{}", e);
         }
     }
 
@@ -309,7 +309,7 @@ public class StockService {
                                 !getValue("corp_name", corp).toLowerCase(Locale.ROOT).contains("fund")) {
 
                             //가격정보가 있는 데이터 인지 확인
-                            if(stockPriceRepository.countByStockCode(getValue("stock_code", corp)) > 0 ){
+                            if (stockPriceRepository.countByStockCode(getValue("stock_code", corp)) > 0) {
                                 CorpInfo code = corpInfoRepository.findById(getValue("corp_code", corp)).orElseGet(() -> new CorpInfo().builder()
                                         .corpCode(getValue("corp_code", corp))
                                         .stockCode(getValue("stock_code", corp))
@@ -320,9 +320,9 @@ public class StockService {
                                 //체크 일자 업데이트
                                 code.setCheckDt(LocalDate.now());
 
-                                if(code.getCorpName().contains("은행") || code.getCorpName().contains("금융")){
+                                if (code.getCorpName().contains("은행") || code.getCorpName().contains("금융")) {
                                     code.setCorpType(CorpType.BANK);
-                                }else if(code.getCorpName().contains("지주") || code.getCorpName().contains("홀딩스") ){
+                                } else if (code.getCorpName().contains("지주") || code.getCorpName().contains("홀딩스")) {
                                     code.setCorpType(CorpType.HOLDING);
                                 }
 
@@ -344,7 +344,7 @@ public class StockService {
             corpInfoRepository.saveAll(unCheckedCorpList);
 
         } catch (Exception e) {
-            Logger.error("{}" ,e);
+            Logger.error("{}", e);
         }
 
     }
@@ -359,19 +359,19 @@ public class StockService {
     @Async
     public void setMultiCorpFinanceInfo(String year) {
         // 15년 이전 데이터는 지원 안함
-        if(Integer.parseInt(year) < ApplicationConstants.LIMIT_YEAR){
+        if (Integer.parseInt(year) < ApplicationConstants.LIMIT_YEAR) {
             return;
         }
 
         Long totalCount = corpInfoRepository.countByState(CorpState.ACTIVE);
-        int pageSize = (int)Math.ceil(totalCount/100.0);
+        int pageSize = (int) Math.ceil(totalCount / 100.0);
 
-        for(int i =0; i< pageSize; i++){
+        for (int i = 0; i < pageSize; i++) {
             //Dart 파라메터의 최대 parm 개수 : 100
             Pageable pageable = PageRequest.of(i, 100);
             Page<CorpCodeMapper> codePage = corpInfoRepository.findByStateAndCorpTypeIsNull(pageable, CorpState.ACTIVE);
 
-            if(codePage.getNumberOfElements() > 0 ){
+            if (codePage.getNumberOfElements() > 0) {
                 setMultiCorpFinanceInfo(codePage.getContent(), year, QuarterCode.Q1);
                 setMultiCorpFinanceInfo(codePage.getContent(), year, QuarterCode.Q2);
                 setMultiCorpFinanceInfo(codePage.getContent(), year, QuarterCode.Q3);
@@ -384,15 +384,15 @@ public class StockService {
     @Transactional
     public void setMultiCorpFinanceInfo(List<CorpCodeMapper> infoList, String year, QuarterCode quarter) {
 
-        if(!StringUtils.hasText(year)){
+        if (!StringUtils.hasText(year)) {
             year = Integer.toString(LocalDate.now().getYear());
         }
 
-        if(Integer.parseInt(year) < ApplicationConstants.LIMIT_YEAR){
+        if (Integer.parseInt(year) < ApplicationConstants.LIMIT_YEAR) {
             return;
         }
 
-        if(infoList.size() == 0){
+        if (infoList.size() == 0) {
             return;
         }
 
@@ -401,7 +401,7 @@ public class StockService {
             sb.append(corpCode.getCorpCode());
             sb.append(",");
         }
-        sb.setLength(sb.length()-1);
+        sb.setLength(sb.length() - 1);
 
         UriComponents uri = UriComponentsBuilder
                 .newInstance()
@@ -425,17 +425,18 @@ public class StockService {
 
             if (response.getStatus().equals("000")) {
                 List<CorpFinance> financeList = new ArrayList<>();
-                List<FinanceItem> financeOrigin = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {});
+                List<FinanceItem> financeOrigin = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {
+                });
 
-                if(financeOrigin.size() > 0){
+                if (financeOrigin.size() > 0) {
                     for (CorpCodeMapper corpCode : infoList) {
-                        List<FinanceItem> financeItems = setFinanceParser(financeOrigin,corpCode.getCorpCode());
-                        if(financeItems.size() > 0){
+                        List<FinanceItem> financeItems = setFinanceParser(financeOrigin, corpCode.getCorpCode());
+                        if (financeItems.size() > 0) {
                             //재무제표에 한국이 아닌 데이터 삭제
                             checkChinaStock(financeItems);
 
                             CorpFinance finance = setFinanceInfo(corpCode.getCorpCode(), year, quarter, financeItems);
-                            if(finance.getRevenue() != null){
+                            if (finance.getRevenue() != null) {
                                 financeList.add(finance);
                             }
 
@@ -446,7 +447,7 @@ public class StockService {
                 financeRepository.saveAll(financeList);
             }
         } catch (Exception e) {
-            Logger.error("{}" ,e);
+            Logger.error("{}", e);
         }
 
     }
@@ -459,17 +460,17 @@ public class StockService {
                 temp.setCorpType(CorpType.CHINA);
                 corpInfoRepository.save(temp);
                 iter.remove();
-            }else if(item.getCurrency().equals("JPY")){
+            } else if (item.getCurrency().equals("JPY")) {
                 CorpInfo temp = corpInfoRepository.findTopByCorpCode(item.getCorp_code());
                 temp.setCorpType(CorpType.JAPAN);
                 corpInfoRepository.save(temp);
                 iter.remove();
-            }else if(item.getCurrency().equals("JPY")){
+            } else if (item.getCurrency().equals("JPY")) {
                 CorpInfo temp = corpInfoRepository.findTopByCorpCode(item.getCorp_code());
                 temp.setCorpType(CorpType.USD);
                 corpInfoRepository.save(temp);
                 iter.remove();
-            }else if(!item.getCurrency().equals("KRW")) {
+            } else if (!item.getCurrency().equals("KRW")) {
                 CorpInfo temp = corpInfoRepository.findTopByCorpCode(item.getCorp_code());
                 temp.setCorpType(CorpType.ETC);
                 corpInfoRepository.save(temp);
@@ -483,14 +484,14 @@ public class StockService {
     @Async
     public void setSingleCorpFinanceInfo(String corpCode, String year) {
         // 15년 이전 데이터는 지원 안함
-        if(Integer.parseInt(year) < ApplicationConstants.LIMIT_YEAR){
+        if (Integer.parseInt(year) < ApplicationConstants.LIMIT_YEAR) {
             return;
         }
 
-        setSingleCorpFinanceInfo(corpCode, year,  QuarterCode.Q1);
-        setSingleCorpFinanceInfo(corpCode, year,  QuarterCode.Q2);
-        setSingleCorpFinanceInfo(corpCode, year,  QuarterCode.Q3);
-        setSingleCorpFinanceInfo(corpCode, year,  QuarterCode.Q4);
+        setSingleCorpFinanceInfo(corpCode, year, QuarterCode.Q1);
+        setSingleCorpFinanceInfo(corpCode, year, QuarterCode.Q2);
+        setSingleCorpFinanceInfo(corpCode, year, QuarterCode.Q3);
+        setSingleCorpFinanceInfo(corpCode, year, QuarterCode.Q4);
     }
 
 
@@ -499,7 +500,7 @@ public class StockService {
     public void setSingleCorpFinanceInfo(String corpCode, String year, QuarterCode quarter) {
 
         // 15년 이전 데이터는 지원 안함
-       if(Integer.parseInt(year) < ApplicationConstants.LIMIT_YEAR){
+        if (Integer.parseInt(year) < ApplicationConstants.LIMIT_YEAR) {
             return;
         }
 
@@ -526,13 +527,14 @@ public class StockService {
             if (response.getStatus().equals("000")) {
                 //같은 기간 데이터가 있는지 확인
                 List<CorpFinance> financeList = null;
-                List<FinanceItem> financeSrcList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {});
+                List<FinanceItem> financeSrcList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {
+                });
 
                 //재무제표에 한국이 아닌 데이터 삭제
                 checkChinaStock(financeSrcList);
 
-                CorpFinance finance = setFinanceInfo(corpCode, year, quarter,  financeSrcList);
-                if(finance.getRevenue() != null){
+                CorpFinance finance = setFinanceInfo(corpCode, year, quarter, financeSrcList);
+                if (finance.getRevenue() != null) {
                     financeList.add(finance);
                 }
 
@@ -540,17 +542,17 @@ public class StockService {
             }
 
         } catch (Exception e) {
-            Logger.error("{}" ,e);
+            Logger.error("{}", e);
             e.printStackTrace();
         }
     }
 
 
-    private List<FinanceItem> setFinanceParser(List<FinanceItem> financeOriginList, String corpCode){
-        List<FinanceItem> financeList  = new ArrayList<>();
+    private List<FinanceItem> setFinanceParser(List<FinanceItem> financeOriginList, String corpCode) {
+        List<FinanceItem> financeList = new ArrayList<>();
 
-        for(FinanceItem finance :  financeOriginList){
-            if(finance.getCorp_code().equals(corpCode)){
+        for (FinanceItem finance : financeOriginList) {
+            if (finance.getCorp_code().equals(corpCode)) {
                 financeList.add(finance);
             }
         }
@@ -568,20 +570,20 @@ public class StockService {
         finance.setStockCode(financeSrcList.get(0).getStock_code());
         finance.setCorpCode(financeSrcList.get(0).getCorp_code());
 
-        finance.setStartDt(DateUtils.toStringLocalDate(financeSrcList.get(0).getFrmtrm_dt().replace(" 현재","")));
-        finance.setEndDt(DateUtils.toStringLocalDate(financeSrcList.get(0).getThstrm_dt().replace(" 현재","")));
+        finance.setStartDt(DateUtils.toStringLocalDate(financeSrcList.get(0).getFrmtrm_dt().replace(" 현재", "")));
+        finance.setEndDt(DateUtils.toStringLocalDate(financeSrcList.get(0).getThstrm_dt().replace(" 현재", "")));
 
 
         for (FinanceItem item : financeSrcList) {
             if (item.getFs_div().equalsIgnoreCase("OFS")) {
                 Long value = 0l;
 
-                if(StringUtils.hasText(item.getThstrm_amount())){
+                if (StringUtils.hasText(item.getThstrm_amount())) {
                     //음수 파싱 중 문제가 발생하는 경우가 있어 음수 체크
-                    if(item.getThstrm_amount().startsWith("-")){
-                        value = Long.parseLong(item.getThstrm_amount().replaceFirst("-","").replaceAll(",", ""));
+                    if (item.getThstrm_amount().startsWith("-")) {
+                        value = Long.parseLong(item.getThstrm_amount().replaceFirst("-", "").replaceAll(",", ""));
                         value = value * -1l;
-                    }else {
+                    } else {
                         value = Long.parseLong(item.getThstrm_amount().replaceAll(",", ""));
                     }
 
@@ -626,8 +628,8 @@ public class StockService {
         //전년도 재무정보
         CorpFinance byFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getCode(), String.valueOf(Integer.parseInt(year) - 1));
 
-        if(byFinance != null){
-            Double yoy = ((finance.getRevenue().doubleValue() - byFinance.getRevenue().doubleValue())/nowPrice.getMarketTotalAmt()) * 100;
+        if (byFinance != null) {
+            Double yoy = ((finance.getRevenue().doubleValue() - byFinance.getRevenue().doubleValue()) / nowPrice.getMarketTotalAmt()) * 100;
             finance.setYOY(yoy);
         }
 
@@ -644,14 +646,14 @@ public class StockService {
     }
 
     private void setFinanceGrowth(CorpFinance bqFinance, CorpFinance finance, PriceMapper nowPrice) {
-        if(bqFinance != null && nowPrice != null){
-            Double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue())/ nowPrice.getMarketTotalAmt()) * 100;
+        if (bqFinance != null && nowPrice != null) {
+            Double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue()) / nowPrice.getMarketTotalAmt()) * 100;
             finance.setQOQ(qoq);
 
-            Double OPGE =  ((finance.getOperatingProfit().doubleValue() - bqFinance.getOperatingProfit().doubleValue())/ nowPrice.getMarketTotalAmt()) * 100;
+            Double OPGE = ((finance.getOperatingProfit().doubleValue() - bqFinance.getOperatingProfit().doubleValue()) / nowPrice.getMarketTotalAmt()) * 100;
             finance.setOPGE(OPGE);
 
-            Double PGE = ((finance.getNetIncome().doubleValue() - bqFinance.getNetIncome().doubleValue())/ nowPrice.getMarketTotalAmt()) * 100;
+            Double PGE = ((finance.getNetIncome().doubleValue() - bqFinance.getNetIncome().doubleValue()) / nowPrice.getMarketTotalAmt()) * 100;
             finance.setPGE(PGE);
         }
     }
@@ -660,11 +662,11 @@ public class StockService {
         //분기 데이터의 마지막일자 시가총액 불러오기
         PriceMapper nowPrice = stockPriceRepository.findTopByStockCodeAndBasDt(finance.getStockCode(), finance.getEndDt());
 
-        if(nowPrice != null){
+        if (nowPrice != null) {
             finance.setPSR(nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue());
             finance.setPBR(nowPrice.getMarketTotalAmt().doubleValue() / finance.getTotalEquity().doubleValue());
             finance.setPER(nowPrice.getMarketTotalAmt().doubleValue() / finance.getNetIncome().doubleValue());
-            finance.setPOR(nowPrice.getMarketTotalAmt().doubleValue() / finance.getOperatingProfit().doubleValue() );
+            finance.setPOR(nowPrice.getMarketTotalAmt().doubleValue() / finance.getOperatingProfit().doubleValue());
         }
     }
 
@@ -711,24 +713,24 @@ public class StockService {
         stockAverageRepository.save(average);
     }
 
-    Integer getMomentumScore(Integer price, String code){
+    Integer getMomentumScore(Integer price, String code) {
         Integer score = 0;
 
-        for(int i =1; i<= 12; i++){
+        for (int i = 1; i <= 12; i++) {
             LocalDate target = LocalDate.now().minusMonths(i);
-            if(target.getDayOfWeek().getValue() == 6 ){
+            if (target.getDayOfWeek().getValue() == 6) {
                 target = target.minusDays(1);
-            }else if(target.getDayOfWeek().getValue() == 7){
+            } else if (target.getDayOfWeek().getValue() == 7) {
                 target = target.plusDays(1);
             }
 
             PriceMapper bfPrice = stockPriceRepository.findTopByStockCodeAndBasDt(code, target);
 
-            if(bfPrice != null){
-                if(price > bfPrice.getEndPrice()){
-                    score ++;
-                }else if(price < bfPrice.getEndPrice()){
-                    score --;
+            if (bfPrice != null) {
+                if (price > bfPrice.getEndPrice()) {
+                    score++;
+                } else if (price < bfPrice.getEndPrice()) {
+                    score--;
                 }
             }
         }
@@ -736,31 +738,31 @@ public class StockService {
         return score;
     }
 
-    public List<RecommendDto> getStockRecommend(LocalDate date, String portKey ){
+    public List<RecommendDto> getStockRecommend(LocalDate date, String portKey) {
 
         Portfolio portfolio = portfolioRepository.findByPortfolioId(portKey);
-        if(portfolio == null){
+        if (portfolio == null) {
             throw new InvalidRequestException("일치하는 포트폴리오 없음");
         }
 
         String[] indicator = portfolio.getIndicator().split(ApplicationConstants.SPLIT_KEY);
 
-        if(indicator.length == 0){
+        if (indicator.length == 0) {
             throw new InvalidRequestException("포트폴리오 조건이 없음");
         }
 
         List<StockOrder> orderList = new ArrayList<>();
 
         //선별된 주식리스트에 가중치를 부여
-        for(String key : indicator ){
-            List<StockDto> list = financeSupport.findByStockOrderSet(date, key, portfolio.getRanges() ,portfolio.getStockCount());
+        for (String key : indicator) {
+            List<StockDto> list = financeSupport.findByStockOrderSet(date, key, portfolio.getRanges(), portfolio.getStockCount());
 
-            for(int i =0; i< list.size(); i++){
+            for (int i = 0; i < list.size(); i++) {
                 StockDto item = list.get(i);
                 boolean check = false;
 
-                for(int j = 0; j< orderList.size(); j++){
-                    if(item.getStockCode().equals(orderList.get(j).getStock().getStockCode())){
+                for (int j = 0; j < orderList.size(); j++) {
+                    if (item.getStockCode().equals(orderList.get(j).getStock().getStockCode())) {
                         StockOrder order = orderList.get(j);
                         //가중치를 추가로 부여 한다.
                         order.setOrder(order.getOrder() + list.size() - i);
@@ -771,10 +773,10 @@ public class StockService {
                 }
 
                 //리스트 내부에 아이템이 없다면 추가
-                if(!check){
+                if (!check) {
                     orderList.add(StockOrder.builder()
-                                    .stock(item)
-                                    .order(list.size() - i)
+                            .stock(item)
+                            .order(list.size() - i)
                             .build());
                 }
             }
@@ -784,21 +786,21 @@ public class StockService {
         Collections.sort(orderList, Collections.reverseOrder());
 
         //가중치 추가를 하면서 개수가 많아졌다면 자르기
-        if(orderList.size() > portfolio.getStockCount()){
-            orderList = orderList.subList(0,portfolio.getStockCount()-1);
+        if (orderList.size() > portfolio.getStockCount()) {
+            orderList = orderList.subList(0, portfolio.getStockCount() - 1);
         }
 
         //현재 가격, 포트폴리오 상 자본금을 고려하여 구매 개수 설정
         List<RecommendDto> result = new ArrayList<>();
-        int payForStock = portfolio.getTotalValue()/portfolio.getStockCount();
-        for(StockOrder temp : orderList ){
+        int payForStock = portfolio.getTotalValue() / portfolio.getStockCount();
+        for (StockOrder temp : orderList) {
 
             result.add(RecommendDto.builder()
-                            .stockCode(temp.getStock().getStockCode())
-                            .corpName(temp.getStock().getCorpName())
-                            .price(temp.getStock().getEndPrice())
-                            .count( payForStock/temp.getStock().getEndPrice())
-                    .build() );
+                    .stockCode(temp.getStock().getStockCode())
+                    .corpName(temp.getStock().getCorpName())
+                    .price(temp.getStock().getEndPrice())
+                    .count(payForStock / temp.getStock().getEndPrice())
+                    .build());
         }
 
         return result;

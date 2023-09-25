@@ -34,49 +34,31 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
     }
 
     //인디케이터의 조건에 맞는 주식 리스트를 추출
-    public List<StockDto> findByStockOrderSet(LocalDate date, String indicator, AmtRange range, Integer limit){
-        return queryFactory.select(
-                Projections.constructor(StockDto.class,
-                        corpInfo.corpName,
-                        corpFinance.stockCode,
-                        stockPrice.endPrice)
-                )
+    public List<StockDto> findByStockOrderSet(LocalDate date, String indicator, AmtRange range, Integer limit) {
+        return queryFactory.select(Projections
+                .constructor(StockDto.class, corpInfo.corpName, corpFinance.stockCode, stockPrice.endPrice))
                 .from(corpFinance)
-                .join(corpInfo).on(corpFinance.corpCode.eq(corpInfo.corpCode))
-                .leftJoin(stockPrice).on(stockPrice.stockCode.eq(corpFinance.stockCode))
-                .where(stockPrice.basDt.eq(date), rangeSet(date, range))
+                .join(corpInfo).on(corpFinance.corpCode.eq(corpInfo.corpCode)).leftJoin(stockPrice).on(stockPrice.stockCode.eq(corpFinance.stockCode))
+                .where(stockPrice.basDt.eq(date), rangeSet(date, range), upperZero(indicator))
                 .limit(limit)
                 .orderBy(setOrderSpecifier(indicator))
                 .fetch();
     }
 
-    public List<FinanceSimpleDto> findByFinanceSimple(Long id, List<String> orderList){
+    public List<FinanceSimpleDto> findByFinanceSimple(Long id, List<String> orderList) {
 
-        List<FinanceSimpleDto> results = queryFactory
-                .select(
-                        Projections.constructor(FinanceSimpleDto.class,
-                                corpFinance.financeId,
-                                new CaseBuilder()
-                                        .when(corpFinance.corpCode.eq("Q1")).then("1분기")
-                                        .when(corpFinance.corpCode.eq("Q2")).then("2분기")
-                                        .when(corpFinance.corpCode.eq("Q3")).then("3분기")
-                                        .otherwise("4분기"),
-                                corpFinance.stockCode,
-                                corpFinance.capital,
-                                corpFinance.totalAssets,
-                                corpFinance.totalDebt,
-                                corpFinance.totalEquity,
-                                corpFinance.revenue,
-                                corpFinance.netIncome,
-                                corpFinance.operatingProfit
-                        )
-                )
+        return queryFactory.select(Projections
+                .constructor(FinanceSimpleDto.class, corpFinance.financeId,
+                        new CaseBuilder()
+                        .when(corpFinance.corpCode.eq("Q1")).then("1분기")
+                        .when(corpFinance.corpCode.eq("Q2")).then("2분기")
+                        .when(corpFinance.corpCode.eq("Q3")).then("3분기")
+                        .otherwise("4분기"),
+                        corpFinance.stockCode, corpFinance.capital, corpFinance.totalAssets, corpFinance.totalDebt, corpFinance.totalEquity, corpFinance.revenue, corpFinance.netIncome, corpFinance.operatingProfit))
                 .from(corpFinance)
-                .where(corpFinance.financeId.eq(id))
-                .orderBy(createOrderSpecifier(orderList))
+                .where(corpFinance.financeId.eq(id)).orderBy(createOrderSpecifier(orderList))
                 .fetch();
 
-        return results;
     }
 
     // 동적으로 오더 순서 생성
@@ -84,13 +66,13 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
 
         List<OrderSpecifier> orderSpecifiers = new ArrayList<>();
 
-        for(String key : keyList){
+        for (String key : keyList) {
 
-            if(key.equals("PSR")){
+            if (key.equals("PSR")) {
                 orderSpecifiers.add(new OrderSpecifier(Order.ASC, corpFinance.PSR));
-            }else if(key.equals("POR")){
+            } else if (key.equals("POR")) {
                 orderSpecifiers.add(new OrderSpecifier(Order.ASC, corpFinance.POR));
-            }else if(key.equals("PER")){
+            } else if (key.equals("PER")) {
                 orderSpecifiers.add(new OrderSpecifier(Order.ASC, corpFinance.PER));
             }
         }
@@ -99,45 +81,71 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
 
     //지표에 따른 오더 결정
     private OrderSpecifier setOrderSpecifier(String key) {
-         switch (key){
-                case "PSR" :
-                    return new OrderSpecifier(Order.ASC, corpFinance.PSR);
-                case "PBR" :
-                    return new OrderSpecifier(Order.ASC, corpFinance.PBR);
-                case "PER" :
-                    return new OrderSpecifier(Order.ASC, corpFinance.PER);
-                case "POR" :
-                    return new OrderSpecifier(Order.ASC, corpFinance.POR);
-                case "YOY" :
-                    return new OrderSpecifier(Order.DESC, corpFinance.YOY);
-                case "QOQ" :
-                    return new OrderSpecifier(Order.DESC, corpFinance.QOQ);
-                case "OPGE" :
-                    return new OrderSpecifier(Order.DESC, corpFinance.OPGE);
-                case "PGE" :
-                    return new OrderSpecifier(Order.DESC, corpFinance.PGE);
-                default :
-                    return new OrderSpecifier(Order.DESC, corpFinance.revenue);
-            }
+        switch (key) {
+            case "PSR":
+                return new OrderSpecifier(Order.ASC, corpFinance.PSR);
+            case "PBR":
+                return new OrderSpecifier(Order.ASC, corpFinance.PBR);
+            case "PER":
+                return new OrderSpecifier(Order.ASC, corpFinance.PER);
+            case "POR":
+                return new OrderSpecifier(Order.ASC, corpFinance.POR);
+            case "YOY":
+                return new OrderSpecifier(Order.DESC, corpFinance.YOY);
+            case "QOQ":
+                return new OrderSpecifier(Order.DESC, corpFinance.QOQ);
+            case "OPGE":
+                return new OrderSpecifier(Order.DESC, corpFinance.OPGE);
+            case "PGE":
+                return new OrderSpecifier(Order.DESC, corpFinance.PGE);
+            default:
+                return new OrderSpecifier(Order.DESC, corpFinance.revenue);
+        }
+    }
+
+    //정렬 대상이 최소 0 이상인 경우만 체크
+    private BooleanExpression upperZero(String key) {
+        switch (key) {
+            case "PSR":
+                return corpFinance.PSR.gt(0);
+            case "PBR":
+                return corpFinance.PBR.gt(0);
+            case "PER":
+                return corpFinance.PER.gt(0);
+            case "POR":
+                return corpFinance.POR.gt(0);
+            case "YOY":
+                return corpFinance.YOY.gt(0);
+            case "QOQ":
+                return corpFinance.QOQ.gt(0);
+            case "OPGE":
+                return corpFinance.OPGE.gt(0);
+            case "PGE":
+                return corpFinance.PGE.gt(0);
+            default:
+                return corpFinance.revenue.gt(0);
         }
 
-    private BooleanExpression rangeSet(LocalDate date,  AmtRange range){
-        if(range.equals(AmtRange.LOWER20) ){
 
-          List<Integer> price = queryFactory.select(stockPrice.endPrice).from(stockPrice)
-                    .where(stockPrice.basDt.eq(date))
-                    .orderBy(stockPrice.marketTotalAmt.asc()).fetch();
+    }
 
-          int per20 = (int)Math.floor(price.size()*0.2f);
 
-          return stockPrice.endPrice.loe(price.get(per20));
 
-        }else if(range.equals(AmtRange.UPPER200)){
 
-            Integer price = queryFactory.select(stockPrice.endPrice).from(stockPrice)
-                    .where(stockPrice.basDt.eq(date))
-                    .orderBy(stockPrice.marketTotalAmt.desc())
-                    .fetch().get(199);
+
+
+    private BooleanExpression rangeSet(LocalDate date, AmtRange range) {
+        if (range.equals(AmtRange.LOWER20)) {
+
+            List<Integer> price = queryFactory.select(stockPrice.endPrice).from(stockPrice).where(stockPrice.basDt.eq(date)).orderBy(stockPrice.marketTotalAmt.asc()).fetch();
+
+            int per20 = (int) Math.floor(price.size() * 0.2f);
+
+            return stockPrice.endPrice.loe(price.get(per20));
+
+        } else if (range.equals(AmtRange.UPPER200)) {
+
+            Integer price = queryFactory.select(stockPrice.endPrice).from(stockPrice).where(stockPrice.basDt.eq(date)).orderBy(stockPrice.marketTotalAmt.desc()).fetch().get(199);
 
             return stockPrice.endPrice.goe(price);
         }
