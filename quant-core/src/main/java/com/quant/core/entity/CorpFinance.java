@@ -23,6 +23,9 @@ public class CorpFinance implements Serializable {
 
     String stockCode;
 
+    //통화
+    String currency;
+
     //연도 4자리
     String yearCode;
 

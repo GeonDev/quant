@@ -100,6 +100,7 @@ CREATE TABLE IF NOT EXISTS TB_CORP_FINANCE (
   corp_code varchar(11) ,
   stock_code varchar(11) ,
   year_code varchar(4),
+  currency varchar(8),
   start_dt date ,
   end_dt date ,
   capital bigint,

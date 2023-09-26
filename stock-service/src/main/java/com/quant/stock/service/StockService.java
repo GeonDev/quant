@@ -569,6 +569,7 @@ public class StockService {
         finance.setYearCode(year);
         finance.setStockCode(financeSrcList.get(0).getStock_code());
         finance.setCorpCode(financeSrcList.get(0).getCorp_code());
+        finance.setCurrency(financeSrcList.get(0).getCurrency());
 
         finance.setStartDt(DateUtils.toStringLocalDate(financeSrcList.get(0).getFrmtrm_dt().replace(" 현재", "")));
         finance.setEndDt(DateUtils.toStringLocalDate(financeSrcList.get(0).getThstrm_dt().replace(" 현재", "")));
