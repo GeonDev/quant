@@ -1,6 +1,7 @@
 package com.quant.api.controller;
 
 import com.quant.api.aspect.option.AllowAccessIp;
+import com.quant.core.enums.AmtRange;
 import com.quant.core.enums.QuarterCode;
 import com.quant.core.utils.DateUtils;
 import com.quant.stock.service.StockService;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @AllowAccessIp
 @RestController
@@ -101,14 +103,32 @@ public class ApiController {
     }
 
 
+    //포트폴리오 기반 추천 - 장기 추적용 데이터
     @GetMapping(value = "recommend", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getRecommendStock(@RequestParam(value = "date", required = false, defaultValue = "") String date,
-                                            @RequestParam(value = "portfolio", required = false, defaultValue = "") String portKey) {
+                                            @RequestParam(value = "portfolio", required = false, defaultValue = "") String portKey,
+                                            @RequestParam(value = "save", required = false, defaultValue = "") Character saveYn) {
 
         LocalDate targetDate = DateUtils.toStringLocalDate(date);
 
         return ResponseEntity.ok(stockService.getStockRecommend(targetDate, portKey));
     }
+
+
+    //즉석 추천
+    @GetMapping(value = "recommend/ones", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity getOneRecommendStock(@RequestParam(value = "date", required = false, defaultValue = "") String date,
+                                            @RequestParam(value = "value", required = false, defaultValue = "10000000") Integer value,
+                                               @RequestParam(value = "count", required = false, defaultValue = "20") Integer count,
+                                               @RequestParam(value = "range", required = false, defaultValue = "ALL") AmtRange range,
+                                               @RequestParam(value = "ratio", required = false, defaultValue = "Y") Character ratioYn,
+                                               @RequestParam(value = "indicator", required = false, defaultValue = "") List<String> indicator) {
+
+        LocalDate targetDate = DateUtils.toStringLocalDate(date);
+
+        return ResponseEntity.ok( stockService.getStockRecommendOne(targetDate, value, count, range, ratioYn, indicator ));
+    }
+
 
 
 }

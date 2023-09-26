@@ -757,29 +757,7 @@ public class StockService {
         for (String key : indicator) {
             List<StockDto> list = financeSupport.findByStockOrderSet(date, key, portfolio.getRanges(), portfolio.getStockCount());
 
-            for (int i = 0; i < list.size(); i++) {
-                StockDto item = list.get(i);
-                boolean check = false;
-
-                for (int j = 0; j < orderList.size(); j++) {
-                    if (item.getStockCode().equals(orderList.get(j).getStock().getStockCode())) {
-                        StockOrder order = orderList.get(j);
-                        //가중치를 추가로 부여 한다.
-                        order.setOrder(order.getOrder() + list.size() - i);
-                        //리스트에 데이터가 있음을 체크
-                        check = true;
-                        break;
-                    }
-                }
-
-                //리스트 내부에 아이템이 없다면 추가
-                if (!check) {
-                    orderList.add(StockOrder.builder()
-                            .stock(item)
-                            .order(list.size() - i)
-                            .build());
-                }
-            }
+            getStockOrderList(orderList, list);
         }
 
         // 내림차순 정렬
@@ -790,6 +768,7 @@ public class StockService {
             orderList = orderList.subList(0, portfolio.getStockCount() - 1);
         }
 
+
         //현재 가격, 포트폴리오 상 자본금을 고려하여 구매 개수 설정
         List<RecommendDto> result = new ArrayList<>();
         int payForStock = portfolio.getTotalValue() / portfolio.getStockCount();
@@ -799,10 +778,100 @@ public class StockService {
                     .stockCode(temp.getStock().getStockCode())
                     .corpName(temp.getStock().getCorpName())
                     .price(temp.getStock().getEndPrice())
-                    .count(payForStock / temp.getStock().getEndPrice())
+                    .count(getBuyStockCount(temp, payForStock, portfolio.getRatioYn(), date) )
                     .build());
         }
 
         return result;
+    }
+
+    //주식 구매 개수 계산
+    private Integer getBuyStockCount(StockOrder target, int pay, Character ratioYn, LocalDate date){
+        Integer stockCount = pay / target.getStock().getEndPrice();
+
+        if(ratioYn.equals('Y') ){
+            List<StockAverage> averageList = stockAverageRepository.findByStockCodeAndTarDt(target.getStock().getStockCode(), date);
+
+            if(averageList != null && averageList.size() > 0){
+                int upperCount = averageList.size();
+
+                //해당 주식의 종가가 평균가보다 작은 경우 구매 개수 삭감
+                for(StockAverage average : averageList){
+                    if(target.getStock().getEndPrice() < average.getPrice()){
+                        upperCount --;
+                    }
+                }
+                stockCount = stockCount * (upperCount/averageList.size());
+            }
+        }
+
+        return stockCount;
+    }
+
+
+
+    public List<RecommendDto> getStockRecommendOne(LocalDate date, Integer value, Integer count, AmtRange range, Character ratioYn,  List<String> indicator  ) {
+
+        if (indicator.size() == 0) {
+            throw new InvalidRequestException("포트폴리오 조건이 없음");
+        }
+
+        List<StockOrder> orderList = new ArrayList<>();
+
+        //선별된 주식리스트에 가중치를 부여
+        for (String key : indicator) {
+            List<StockDto> list = financeSupport.findByStockOrderSet(date, key, range, count);
+
+            getStockOrderList(orderList, list);
+        }
+
+        // 내림차순 정렬
+        Collections.sort(orderList, Collections.reverseOrder());
+
+        //가중치 추가를 하면서 개수가 많아졌다면 자르기
+        if (orderList.size() > count) {
+            orderList = orderList.subList(0, count - 1);
+        }
+
+        //현재 가격, 포트폴리오 상 자본금을 고려하여 구매 개수 설정
+        List<RecommendDto> result = new ArrayList<>();
+        int payForStock = value / count;
+        for (StockOrder temp : orderList) {
+
+            result.add(RecommendDto.builder()
+                    .stockCode(temp.getStock().getStockCode())
+                    .corpName(temp.getStock().getCorpName())
+                    .price(temp.getStock().getEndPrice())
+                    .count(getBuyStockCount(temp, payForStock, ratioYn, date ))
+                    .build());
+        }
+
+        return result;
+    }
+
+    private void getStockOrderList(List<StockOrder> orderList, List<StockDto> list) {
+        for (int i = 0; i < list.size(); i++) {
+            StockDto item = list.get(i);
+            boolean check = false;
+
+            for (int j = 0; j < orderList.size(); j++) {
+                if (item.getStockCode().equals(orderList.get(j).getStock().getStockCode())) {
+                    StockOrder order = orderList.get(j);
+                    //가중치를 추가로 부여 한다.
+                    order.setOrder(order.getOrder() + list.size() - i);
+                    //리스트에 데이터가 있음을 체크
+                    check = true;
+                    break;
+                }
+            }
+
+            //리스트 내부에 아이템이 없다면 추가
+            if (!check) {
+                orderList.add(StockOrder.builder()
+                        .stock(item)
+                        .order(list.size() - i)
+                        .build());
+            }
+        }
     }
 }
