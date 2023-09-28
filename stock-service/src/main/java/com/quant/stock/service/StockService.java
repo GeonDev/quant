@@ -224,6 +224,7 @@ public class StockService {
                             price.setStockTotalCnt(Long.parseLong(item.get("lstgStCnt").toString()));
                             price.setMarketTotalAmt(Long.parseLong(item.get("mrktTotAmt").toString()));
 
+                            //모멘텀 세팅
                             getMomentumScore(price.getEndPrice(), price.getStockCode());
 
                             //FIXME 중복 데이터 저장 방지 - 성능 개선 필요
@@ -756,7 +757,7 @@ public class StockService {
 
         //선별된 주식리스트에 가중치를 부여
         for (String key : indicator) {
-            List<StockDto> list = financeSupport.findByStockOrderSet(date, key, portfolio.getRanges(), portfolio.getStockCount());
+            List<StockDto> list = financeSupport.findByStockOrderSet(date, key, portfolio.getRanges(), portfolio.getStockCount(), portfolio.getMomentumScore());
 
             getStockOrderList(orderList, list);
         }
@@ -811,7 +812,7 @@ public class StockService {
 
 
 
-    public List<RecommendDto> getStockRecommendOne(LocalDate date, Integer value, Integer count, AmtRange range, Character ratioYn,  List<String> indicator  ) {
+    public List<RecommendDto> getStockRecommendOne(LocalDate date, Integer value, Integer count, AmtRange range, Character ratioYn,  List<String> indicator , Integer momentum ) {
 
         if (indicator.size() == 0) {
             throw new InvalidRequestException("포트폴리오 조건이 없음");
@@ -821,7 +822,7 @@ public class StockService {
 
         //선별된 주식리스트에 가중치를 부여
         for (String key : indicator) {
-            List<StockDto> list = financeSupport.findByStockOrderSet(date, key, range, count);
+            List<StockDto> list = financeSupport.findByStockOrderSet(date, key, range, count, momentum);
 
             getStockOrderList(orderList, list);
         }

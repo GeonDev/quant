@@ -34,12 +34,12 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
     }
 
     //인디케이터의 조건에 맞는 주식 리스트를 추출
-    public List<StockDto> findByStockOrderSet(LocalDate date, String indicator, AmtRange range, Integer limit) {
+    public List<StockDto> findByStockOrderSet(LocalDate date, String indicator, AmtRange range, Integer limit, Integer momentum) {
         return queryFactory.select(Projections
                 .constructor(StockDto.class, corpInfo.corpName, corpFinance.stockCode, stockPrice.endPrice))
                 .from(corpFinance)
                 .join(corpInfo).on(corpFinance.corpCode.eq(corpInfo.corpCode)).leftJoin(stockPrice).on(stockPrice.stockCode.eq(corpFinance.stockCode))
-                .where(stockPrice.basDt.eq(date), rangeSet(date, range), upperZero(indicator))
+                .where(stockPrice.basDt.eq(date), rangeSet(date, range), upperZero(indicator) , stockPrice.momentum.goe(momentum))
                 .limit(limit)
                 .orderBy(setOrderSpecifier(indicator))
                 .fetch();

@@ -135,13 +135,15 @@ public class ApiController {
     public ResponseEntity getOneRecommendStock(@RequestParam(value = "date", required = false, defaultValue = "") String date,
                                             @RequestParam(value = "value", required = false, defaultValue = "10000000") Integer value,
                                                @RequestParam(value = "count", required = false, defaultValue = "20") Integer count,
+                                               @RequestParam(value = "momentum", required = false, defaultValue = "0") Integer momentum,
                                                @RequestParam(value = "range", required = false, defaultValue = "ALL") AmtRange range,
                                                @RequestParam(value = "ratio", required = false, defaultValue = "Y") Character ratioYn,
-                                               @RequestParam(value = "indicator", required = false, defaultValue = "") List<String> indicator) {
+                                               @RequestParam(value = "indicator", required = false, defaultValue = "") List<String> indicator
+   ) {
 
         LocalDate targetDate = DateUtils.toStringLocalDate(date);
 
-        return ResponseEntity.ok( stockService.getStockRecommendOne(targetDate, value, count, range, ratioYn, indicator ));
+        return ResponseEntity.ok( stockService.getStockRecommendOne(targetDate, value, count, range, ratioYn, indicator , momentum));
     }
 
 
