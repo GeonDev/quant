@@ -45,21 +45,6 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
                 .fetch();
     }
 
-    public List<FinanceSimpleDto> findByFinanceSimple(Long id, List<String> orderList) {
-
-        return queryFactory.select(Projections
-                .constructor(FinanceSimpleDto.class, corpFinance.financeId,
-                        new CaseBuilder()
-                        .when(corpFinance.corpCode.eq("Q1")).then("1분기")
-                        .when(corpFinance.corpCode.eq("Q2")).then("2분기")
-                        .when(corpFinance.corpCode.eq("Q3")).then("3분기")
-                        .otherwise("4분기"),
-                        corpFinance.stockCode, corpFinance.capital, corpFinance.totalAssets, corpFinance.totalDebt, corpFinance.totalEquity, corpFinance.revenue, corpFinance.netIncome, corpFinance.operatingProfit))
-                .from(corpFinance)
-                .where(corpFinance.financeId.eq(id)).orderBy(createOrderSpecifier(orderList))
-                .fetch();
-
-    }
 
     // 동적으로 오더 순서 생성
     private OrderSpecifier[] createOrderSpecifier(List<String> keyList) {

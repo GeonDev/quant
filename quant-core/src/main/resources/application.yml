@@ -39,6 +39,7 @@ spring:
       mode: never
 
 signkey:
+  path : /data/pass.json
   data-go: UbBresjb6IVpoH2VpdxNeuC0YB8dAr5FQqncYrbSW3XhE3igo5WKraPa5aGHAAHchpnaMbr%2F5gHrKyryz%2FoipQ%3D%3D
   dart: c207c7fb3fa4aecf7e9012257b17012b5949dff8
 

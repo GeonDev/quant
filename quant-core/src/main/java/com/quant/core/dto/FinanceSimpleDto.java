@@ -10,8 +10,6 @@ import java.io.Serializable;
 @AllArgsConstructor
 public class FinanceSimpleDto implements Serializable {
 
-    Long financeId;
-
     //분기코드
     String rceptNo;
 

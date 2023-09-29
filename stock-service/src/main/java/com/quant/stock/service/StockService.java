@@ -47,10 +47,9 @@ import org.w3c.dom.NodeList;
 import javax.transaction.Transactional;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -66,11 +65,8 @@ public class StockService {
     private final PortfolioRepository portfolioRepository;
     private final CorpFinanceRepositorySupport financeSupport;
 
-    @Value("${signkey.data-go}")
-    String apiKey;
-
-    @Value("${signkey.dart}")
-    String dartKey;
+    @Value("${signkey.pass}")
+    String signkey;
 
     @Value("${file.path}")
     String filePath;
@@ -115,7 +111,11 @@ public class StockService {
     }
 
     //공휴일 체크 기능
-    private boolean checkIsDayOff(LocalDate targetDate) throws UnsupportedEncodingException, ParseException {
+    private boolean checkIsDayOff(LocalDate targetDate) throws IOException, ParseException {
+        JSONParser keyParser = new JSONParser();
+        Reader reader = new FileReader(signkey);
+        JSONObject jsonObject = (JSONObject) keyParser.parse(reader);
+
         boolean isDayOff = false;
 
         UriComponents uri = UriComponentsBuilder
@@ -126,7 +126,7 @@ public class StockService {
                 .queryParam("solYear", targetDate.getYear())
                 .queryParam("solMonth", targetDate.getMonthValue() < 10 ? "0" + targetDate.getMonthValue() : targetDate.getMonthValue())
                 .queryParam("_type", "json")
-                .queryParam("ServiceKey", URLDecoder.decode(apiKey, "UTF-8"))
+                .queryParam("ServiceKey", URLDecoder.decode((String) jsonObject.get("data-go"), StandardCharsets.UTF_8))
                 .queryParam("numOfRows", 10)
                 .build();
 
@@ -140,16 +140,16 @@ public class StockService {
         JSONObject body = (JSONObject) response.get("body");
 
 
-        if (!body.get("items").toString().equals("")) {
+        if (!body.get("items").toString().isEmpty()) {
             JSONObject items = (JSONObject) body.get("items");
 
             try {
                 //공휴일이 1개 이상일때
                 JSONArray itemList = (JSONArray) items.get("item");
 
-                if (object != null && header.get("resultMsg").toString().equals(ApplicationConstants.REQUEST_MSG)) {
-                    for (int i = 0; i < itemList.size(); i++) {
-                        JSONObject item = (JSONObject) itemList.get(i);
+                if (header.get("resultMsg").toString().equals(ApplicationConstants.REQUEST_MSG)) {
+                    for (Object o : itemList) {
+                        JSONObject item = (JSONObject) o;
 
                         if (DateUtils.toStringLocalDate(item.get("locdate").toString()).isEqual(targetDate)) {
                             isDayOff = true;
@@ -174,12 +174,16 @@ public class StockService {
     @Transactional
     public void getStockPrice(String marketType, String basDt, int pageNum, int totalCount, int currentCount) {
         try {
+            JSONParser keyParser = new JSONParser();
+            Reader reader = new FileReader(signkey);
+            JSONObject jsonObject = (JSONObject) keyParser.parse(reader);
+
             UriComponents uri = UriComponentsBuilder
                     .newInstance()
                     .scheme("http")
                     .host(ApplicationConstants.API_GO_URL)
                     .path(ApplicationConstants.KRX_STOCK_VALUE_URI)
-                    .queryParam("serviceKey", URLDecoder.decode(apiKey, "UTF-8"))
+                    .queryParam("serviceKey", URLDecoder.decode((String) jsonObject.get("data-go"), StandardCharsets.UTF_8))
                     .queryParam("numOfRows", ApplicationConstants.PAGE_SIZE)
                     .queryParam("pageNo", pageNum)
                     .queryParam("resultType", "json")
@@ -200,7 +204,7 @@ public class StockService {
 
             if (header.get("resultMsg").toString().equals(ApplicationConstants.REQUEST_MSG) && totalCount > 0) {
 
-                if (!body.get("items").toString().equals("")) {
+                if (!body.get("items").toString().isEmpty()) {
                     JSONObject items = (JSONObject) body.get("items");
                     JSONArray itemList = (JSONArray) items.get("item");
 
@@ -225,7 +229,7 @@ public class StockService {
                             price.setMarketTotalAmt(Long.parseLong(item.get("mrktTotAmt").toString()));
 
                             //모멘텀 세팅
-                            getMomentumScore(price.getEndPrice(), price.getStockCode());
+                            price.setMomentum(getMomentumScore(price.getEndPrice(), price.getStockCode()));
 
                             //FIXME 중복 데이터 저장 방지 - 성능 개선 필요
                             if (stockPriceRepository.countByStockCodeAndBasDt(price.getStockCode(), price.getBasDt()) == 0) {
@@ -251,25 +255,31 @@ public class StockService {
 
     //상장 회사 고유 정보 받아오기
     @Transactional
-    public void getDartCorpCodeInfo() {
+    public void getDartCorpCodeInfo()  {
+        try {
+        JSONParser keyParser = new JSONParser();
+        Reader reader = new FileReader(signkey);
+        JSONObject jsonObject = (JSONObject) keyParser.parse(reader);
+
+
         UriComponents uri = UriComponentsBuilder
                 .newInstance()
                 .scheme("https")
                 .host(ApplicationConstants.DART_API_URL)
                 .path(ApplicationConstants.DART_CORP_CODE_URI)
-                .queryParam("crtfc_key", dartKey)
+                .queryParam("crtfc_key", jsonObject.get("dart"))
                 .build();
 
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(Arrays.asList(MediaType.APPLICATION_OCTET_STREAM));
+        headers.setAccept(List.of(MediaType.APPLICATION_OCTET_STREAM));
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         HttpEntity<String> entity = new HttpEntity<String>(headers);
 
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<byte[]> response = restTemplate.exchange(uri.toString(), HttpMethod.GET, entity, byte[].class);
 
-        try {
+
             File lOutFile = new File(filePath + "temp.zip");
             FileOutputStream lFileOutputStream = new FileOutputStream(lOutFile);
             lFileOutputStream.write(response.getBody());
@@ -393,7 +403,7 @@ public class StockService {
             return;
         }
 
-        if (infoList.size() == 0) {
+        if (infoList.isEmpty()) {
             return;
         }
 
@@ -404,12 +414,19 @@ public class StockService {
         }
         sb.setLength(sb.length() - 1);
 
+        try {
+
+        JSONParser keyParser = new JSONParser();
+        Reader reader = new FileReader(signkey);
+        JSONObject jsonObject = (JSONObject) keyParser.parse(reader);
+
+
         UriComponents uri = UriComponentsBuilder
                 .newInstance()
                 .scheme("https")
                 .host(ApplicationConstants.DART_API_URL)
                 .path(ApplicationConstants.DART_STOCK_FINANCE_MULTI_URI)
-                .queryParam("crtfc_key", dartKey)
+                .queryParam("crtfc_key", jsonObject.get("dart"))
                 .queryParam("corp_code", sb)
                 .queryParam("bsns_year", year)
                 .queryParam("reprt_code", quarter.getCode())
@@ -418,7 +435,7 @@ public class StockService {
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
 
-        try {
+
             ObjectMapper mapper = new ObjectMapper();
             mapper.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
             mapper.enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES);
@@ -429,10 +446,10 @@ public class StockService {
                 List<FinanceItem> financeOrigin = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {
                 });
 
-                if (financeOrigin.size() > 0) {
+                if (!financeOrigin.isEmpty()) {
                     for (CorpCodeMapper corpCode : infoList) {
                         List<FinanceItem> financeItems = setFinanceParser(financeOrigin, corpCode.getCorpCode());
-                        if (financeItems.size() > 0) {
+                        if (!financeItems.isEmpty()) {
                             //재무제표에 한국이 아닌 데이터 삭제
                             checkChinaStock(financeItems);
 
@@ -466,7 +483,7 @@ public class StockService {
                 temp.setCorpType(CorpType.JAPAN);
                 corpInfoRepository.save(temp);
                 iter.remove();
-            } else if (item.getCurrency().equals("JPY")) {
+            } else if (item.getCurrency().equals("USD")) {
                 CorpInfo temp = corpInfoRepository.findTopByCorpCode(item.getCorp_code());
                 temp.setCorpType(CorpType.USD);
                 corpInfoRepository.save(temp);
@@ -504,13 +521,17 @@ public class StockService {
         if (Integer.parseInt(year) < ApplicationConstants.LIMIT_YEAR) {
             return;
         }
+        try {
+            JSONParser keyParser = new JSONParser();
+            Reader reader = new FileReader(signkey);
+            JSONObject jsonObject = (JSONObject) keyParser.parse(reader);
 
         UriComponents uri = UriComponentsBuilder
                 .newInstance()
                 .scheme("https")
                 .host(ApplicationConstants.DART_API_URL)
                 .path(ApplicationConstants.DART_STOCK_FINANCE_SINGLE_URI)
-                .queryParam("crtfc_key", dartKey)
+                .queryParam("crtfc_key", jsonObject.get("dart"))
                 .queryParam("corp_code", corpCode)
                 .queryParam("bsns_year", year)
                 .queryParam("reprt_code", quarter.getCode())
@@ -519,7 +540,7 @@ public class StockService {
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
 
-        try {
+
             ObjectMapper mapper = new ObjectMapper();
             mapper.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
             mapper.enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES);
@@ -527,9 +548,8 @@ public class StockService {
 
             if (response.getStatus().equals("000")) {
                 //같은 기간 데이터가 있는지 확인
-                List<CorpFinance> financeList = null;
-                List<FinanceItem> financeSrcList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {
-                });
+                List<CorpFinance> financeList = new ArrayList<>();
+                List<FinanceItem> financeSrcList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {});
 
                 //재무제표에 한국이 아닌 데이터 삭제
                 checkChinaStock(financeSrcList);
@@ -578,13 +598,13 @@ public class StockService {
 
         for (FinanceItem item : financeSrcList) {
             if (item.getFs_div().equalsIgnoreCase("OFS")) {
-                Long value = 0l;
+                Long value;
 
                 if (StringUtils.hasText(item.getThstrm_amount())) {
                     //음수 파싱 중 문제가 발생하는 경우가 있어 음수 체크
                     if (item.getThstrm_amount().startsWith("-")) {
                         value = Long.parseLong(item.getThstrm_amount().replaceFirst("-", "").replaceAll(",", ""));
-                        value = value * -1l;
+                        value = value * -1L;
                     } else {
                         value = Long.parseLong(item.getThstrm_amount().replaceAll(",", ""));
                     }
@@ -763,7 +783,7 @@ public class StockService {
         }
 
         // 내림차순 정렬
-        Collections.sort(orderList, Collections.reverseOrder());
+        orderList.sort(Collections.reverseOrder());
 
         //가중치 추가를 하면서 개수가 많아졌다면 자르기
         if (orderList.size() > portfolio.getStockCount()) {
@@ -789,12 +809,12 @@ public class StockService {
 
     //주식 구매 개수 계산
     private Integer getBuyStockCount(StockOrder target, int pay, Character ratioYn, LocalDate date){
-        Integer stockCount = pay / target.getStock().getEndPrice();
+        int stockCount = pay / target.getStock().getEndPrice();
 
         if(ratioYn.equals('Y') ){
             List<StockAverage> averageList = stockAverageRepository.findByStockCodeAndTarDt(target.getStock().getStockCode(), date);
 
-            if(averageList != null && averageList.size() > 0){
+            if(averageList != null && !averageList.isEmpty()){
                 int upperCount = averageList.size();
 
                 //해당 주식의 종가가 평균가보다 작은 경우 구매 개수 삭감
@@ -814,7 +834,7 @@ public class StockService {
 
     public List<RecommendDto> getStockRecommendOne(LocalDate date, Integer value, Integer count, AmtRange range, Character ratioYn,  List<String> indicator , Integer momentum ) {
 
-        if (indicator.size() == 0) {
+        if (indicator.isEmpty()) {
             throw new InvalidRequestException("포트폴리오 조건이 없음");
         }
 
@@ -828,7 +848,7 @@ public class StockService {
         }
 
         // 내림차순 정렬
-        Collections.sort(orderList, Collections.reverseOrder());
+        orderList.sort(Collections.reverseOrder());
 
         //가중치 추가를 하면서 개수가 많아졌다면 자르기
         if (orderList.size() > count) {
