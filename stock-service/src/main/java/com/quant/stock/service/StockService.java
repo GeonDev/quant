@@ -15,6 +15,7 @@ import com.quant.core.repository.*;
 import com.quant.core.repository.support.CorpFinanceRepositorySupport;
 import com.quant.core.utils.CommonUtils;
 import com.quant.core.utils.DateUtils;
+import com.quant.stock.model.EmailMessage;
 import com.quant.stock.model.StockOrder;
 import com.quant.stock.model.dart.DartBase;
 import com.quant.stock.model.dart.FinanceItem;
@@ -57,6 +58,8 @@ import java.util.*;
 @RequiredArgsConstructor
 public class StockService {
 
+    private final EmailService emailService;
+
     private final UserInfoRepository userInfoRepository;
     private final CorpInfoRepository corpInfoRepository;
     private final StockPriceRepository stockPriceRepository;
@@ -65,20 +68,34 @@ public class StockService {
     private final PortfolioRepository portfolioRepository;
     private final CorpFinanceRepositorySupport financeSupport;
 
-    @Value("${signkey.pass}")
+    @Value("${signkey.path}")
     String signkey;
 
     @Value("${file.path}")
     String filePath;
 
     @Transactional
-    public String setUserInfo(String email) {
+    public void setUserInfo(String email) {
+
+        if(!email.matches("^[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*@[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*.[a-zA-Z]{2,3}$")){
+            throw new InvalidRequestException("이메일 형식이 맞지 않습니다.");
+        }
+
         if (userInfoRepository.countByEmail(email) == 0) {
+
 
             UserInfo info = UserInfo.builder()
                     .email(email)
                     .build();
-            return userInfoRepository.save(info).getUserKey();
+            userInfoRepository.save(info);
+
+
+            emailService.sendMail(EmailMessage.builder()
+                            .to(email)
+                            .subject("[Quent] 신규 이메일등록")
+                            .message("신규 등록 되었습니다.")
+                    .build());
+
         } else {
             throw new InvalidRequestException("중복된 이메일 있음");
         }

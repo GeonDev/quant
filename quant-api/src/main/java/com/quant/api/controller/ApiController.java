@@ -27,14 +27,14 @@ public class ApiController {
 
     @PostMapping(value = "port", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity setPort(@RequestParam(value = "key") String userKey,
-                                  @RequestParam(value = "momentum" ,required = false ,defaultValue = "6") Integer momentum,
-                                  @RequestParam(value = "value" ,defaultValue = "10000000") Integer value,
-                                  @RequestParam(value = "count" ,defaultValue = "20") Integer count,
-                                  @RequestParam(value = "loss" ,defaultValue = "50") Integer loss,
-                                  @RequestParam(value = "range" ,defaultValue = "ALL") AmtRange range,
-                                  @RequestParam(value = "indicator" ,defaultValue = "")  List<String> indicator,
+                                  @RequestParam(value = "momentum", required = false, defaultValue = "6") Integer momentum,
+                                  @RequestParam(value = "value", defaultValue = "10000000") Integer value,
+                                  @RequestParam(value = "count", defaultValue = "20") Integer count,
+                                  @RequestParam(value = "loss", defaultValue = "50") Integer loss,
+                                  @RequestParam(value = "range", defaultValue = "ALL") AmtRange range,
+                                  @RequestParam(value = "indicator", defaultValue = "") List<String> indicator,
                                   @RequestParam(value = "rebalance", defaultValue = "") List<String> rebalance,
-                                  @RequestParam(value = "ratio" , defaultValue = "Y") Character ratio,
+                                  @RequestParam(value = "ratio", defaultValue = "Y") Character ratio,
                                   @RequestParam(value = "comment", defaultValue = "") String comment) {
         return ResponseEntity.ok("");
     }
@@ -42,7 +42,9 @@ public class ApiController {
 
     @PostMapping(value = "user", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity setUser(@RequestParam(value = "email") String email) {
-        return ResponseEntity.ok("User key : " + stockService.setUserInfo(email));
+        stockService.setUserInfo(email);
+
+        return ResponseEntity.ok("User Set");
     }
 
 
@@ -50,18 +52,18 @@ public class ApiController {
     public ResponseEntity setStockPrice(@RequestParam(value = "sDate", required = false, defaultValue = "") String sDate,
                                         @RequestParam(value = "eDate", required = false, defaultValue = "") String eDate) {
 
-        if (StringUtils.hasText(sDate) && StringUtils.hasText(eDate)){
+        if (StringUtils.hasText(sDate) && StringUtils.hasText(eDate)) {
             LocalDate startDate = DateUtils.toStringLocalDate(sDate);
             LocalDate endDate = DateUtils.toStringLocalDate(eDate);
 
             //기준일자 까지 반복
-            while (!endDate.equals(startDate)){
+            while (!endDate.equals(startDate)) {
                 stockService.getKrxDailyInfo(startDate);
                 startDate = startDate.plusDays(1);
             }
-        }else if(StringUtils.hasText(sDate) && !StringUtils.hasText(eDate)){
+        } else if (StringUtils.hasText(sDate) && !StringUtils.hasText(eDate)) {
             stockService.getKrxDailyInfo(DateUtils.toStringLocalDate(sDate));
-        }else {
+        } else {
             stockService.getKrxDailyInfo(LocalDate.now());
         }
 
@@ -85,13 +87,13 @@ public class ApiController {
         }
 
         //특정 기업을 지정했을때
-        if(StringUtils.hasText(corpCode)){
-            if(quarter != null){
+        if (StringUtils.hasText(corpCode)) {
+            if (quarter != null) {
                 stockService.setSingleCorpFinanceInfo(corpCode, year, quarter);
-            }else {
+            } else {
                 stockService.setSingleCorpFinanceInfo(corpCode, year);
             }
-        }else{
+        } else {
             stockService.setMultiCorpFinanceInfo(year);
         }
         return ResponseEntity.ok("SET FINANCE");
@@ -101,17 +103,17 @@ public class ApiController {
     @PostMapping(value = "average", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getAveragePrice(@RequestParam(value = "sDate", required = false, defaultValue = "") String sDate,
                                           @RequestParam(value = "eDate", required = false, defaultValue = "") String eDate) {
-        if (StringUtils.hasText(sDate) && StringUtils.hasText(eDate)){
+        if (StringUtils.hasText(sDate) && StringUtils.hasText(eDate)) {
             LocalDate startDate = DateUtils.toStringLocalDate(sDate);
             LocalDate endDate = DateUtils.toStringLocalDate(eDate);
 
-            while (!endDate.equals(endDate)){
+            while (!endDate.equals(endDate)) {
                 stockService.setStockPriceAverage(startDate);
                 startDate.plusDays(1);
             }
-        }else if(StringUtils.hasText(sDate) && !StringUtils.hasText(eDate)){
+        } else if (StringUtils.hasText(sDate) && !StringUtils.hasText(eDate)) {
             stockService.setStockPriceAverage(DateUtils.toStringLocalDate(sDate));
-        }else {
+        } else {
             stockService.setStockPriceAverage(LocalDate.now());
         }
         return ResponseEntity.ok("SET AVERAGE");
@@ -133,19 +135,18 @@ public class ApiController {
     //즉석 추천
     @GetMapping(value = "recommend/ones", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getOneRecommendStock(@RequestParam(value = "date", required = false, defaultValue = "") String date,
-                                            @RequestParam(value = "value", required = false, defaultValue = "10000000") Integer value,
+                                               @RequestParam(value = "value", required = false, defaultValue = "10000000") Integer value,
                                                @RequestParam(value = "count", required = false, defaultValue = "20") Integer count,
                                                @RequestParam(value = "momentum", required = false, defaultValue = "0") Integer momentum,
                                                @RequestParam(value = "range", required = false, defaultValue = "ALL") AmtRange range,
                                                @RequestParam(value = "ratio", required = false, defaultValue = "Y") Character ratioYn,
                                                @RequestParam(value = "indicator", required = false, defaultValue = "") List<String> indicator
-   ) {
+    ) {
 
         LocalDate targetDate = DateUtils.toStringLocalDate(date);
 
-        return ResponseEntity.ok( stockService.getStockRecommendOne(targetDate, value, count, range, ratioYn, indicator , momentum));
+        return ResponseEntity.ok(stockService.getStockRecommendOne(targetDate, value, count, range, ratioYn, indicator, momentum));
     }
-
 
 
 }

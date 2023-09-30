@@ -15,7 +15,7 @@ import java.io.Reader;
 @Configuration
 public class JasyptConfig {
 
-    @Value("${signkey.pass}")
+    @Value("${signkey.path}")
     private String signkey;
 
     private static final String JASYPT_ALGORITHM = "PBEWithMD5AndDES";
