@@ -103,7 +103,7 @@ public class StockService {
 
 
     //주식 시장 활성일 체크 -> 활성일 일 경우 주식 시세 받기
-    @Async
+    //@Async
     public void getKrxDailyInfo(LocalDate targetDate) {
         //주말은 무시
         if (targetDate.getDayOfWeek().getValue() == 0 || targetDate.getDayOfWeek().getValue() == 6) {
@@ -709,7 +709,7 @@ public class StockService {
 
 
     //주식의 가격 평균 배치
-    @Async
+    //@Async
     public void setStockPriceAverage(LocalDate targetDate) {
         if (targetDate == null) {
             targetDate = LocalDate.now();
