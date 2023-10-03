@@ -25,21 +25,6 @@ public class ApiController {
     private final StockService stockService;
 
 
-    @PostMapping(value = "port", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity setPort(@RequestParam(value = "key") String userKey,
-                                  @RequestParam(value = "momentum", required = false, defaultValue = "6") Integer momentum,
-                                  @RequestParam(value = "value", defaultValue = "10000000") Integer value,
-                                  @RequestParam(value = "count", defaultValue = "20") Integer count,
-                                  @RequestParam(value = "loss", defaultValue = "50") Integer loss,
-                                  @RequestParam(value = "range", defaultValue = "ALL") AmtRange range,
-                                  @RequestParam(value = "indicator", defaultValue = "") List<String> indicator,
-                                  @RequestParam(value = "rebalance", defaultValue = "") List<String> rebalance,
-                                  @RequestParam(value = "ratio", defaultValue = "Y") Character ratio,
-                                  @RequestParam(value = "comment", defaultValue = "") String comment) {
-        return ResponseEntity.ok("");
-    }
-
-
     @PostMapping(value = "user", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity setUser(@RequestParam(value = "email") String email) {
         stockService.setUserInfo(email);
@@ -148,5 +133,18 @@ public class ApiController {
         return ResponseEntity.ok(stockService.getStockRecommendOne(targetDate, value, count, range, ratioYn, indicator, momentum));
     }
 
+    @PostMapping(value = "port", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity setPort(@RequestParam(value = "key") String userKey,
+                                  @RequestParam(value = "momentum", required = false, defaultValue = "6") Integer momentum,
+                                  @RequestParam(value = "value", defaultValue = "10000000") Integer value,
+                                  @RequestParam(value = "count", defaultValue = "20") Integer count,
+                                  @RequestParam(value = "loss", defaultValue = "50") Integer loss,
+                                  @RequestParam(value = "range", defaultValue = "ALL") AmtRange range,
+                                  @RequestParam(value = "indicator", defaultValue = "") List<String> indicator,
+                                  @RequestParam(value = "rebalance", defaultValue = "") List<String> rebalance,
+                                  @RequestParam(value = "ratio", defaultValue = "Y") Character ratio,
+                                  @RequestParam(value = "comment", defaultValue = "") String comment) {
+        return ResponseEntity.ok("");
+    }
 
 }

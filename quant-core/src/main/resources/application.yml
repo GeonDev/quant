@@ -1,11 +1,7 @@
-
 jasypt:
   encryptor:
     bean: jasyptStringEncryptor
 
-logging:
-  level:
-    root: info
 
 server:
   port: 9180
@@ -23,7 +19,7 @@ spring:
     activate:
       on-profile: local
   jpa:
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         format_sql: true

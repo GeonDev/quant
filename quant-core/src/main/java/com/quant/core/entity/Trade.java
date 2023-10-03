@@ -2,6 +2,7 @@ package com.quant.core.entity;
 
 import com.quant.core.enums.TradingType;
 import lombok.Data;
+import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 import java.time.LocalDate;
@@ -12,8 +13,11 @@ import java.time.LocalDate;
 public class Trade {
 
     @Id
-    @GeneratedValue(strategy= GenerationType.IDENTITY)
-    Long tradeId;
+    @GeneratedValue(generator = "key-generator")
+    @GenericGenerator(name = "key-generator",
+            parameters = @org.hibernate.annotations.Parameter(name = "prefix", value = "TR"),
+            strategy = "com.quant.core.config.KeyGenerator")
+    String tradeId;
 
     String userKey;
 

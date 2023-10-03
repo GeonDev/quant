@@ -12,7 +12,7 @@ import java.time.LocalDate;
 public class StockPrice {
 
     @Id
-    @GeneratedValue(strategy= GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long priceId;
 
     String stockCode;

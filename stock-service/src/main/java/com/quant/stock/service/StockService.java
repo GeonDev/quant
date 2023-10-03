@@ -190,6 +190,8 @@ public class StockService {
     //주식 시세 받아오기
     @Transactional
     public void getStockPrice(String marketType, String basDt, int pageNum, int totalCount, int currentCount) {
+        Logger.debug("[DEBUG] SET STOCK DATA AT : {} {}",marketType, basDt);
+
         try {
             JSONParser keyParser = new JSONParser();
             Reader reader = new FileReader(signkey);
@@ -225,8 +227,6 @@ public class StockService {
                     JSONObject items = (JSONObject) body.get("items");
                     JSONArray itemList = (JSONArray) items.get("item");
 
-                    List<StockPrice> priceList = new ArrayList<>();
-
                     for (int i = 0; i < itemList.size(); i++) {
                         JSONObject item = (JSONObject) itemList.get(i);
                         StockPrice price = new StockPrice();
@@ -246,17 +246,16 @@ public class StockService {
                             price.setMarketTotalAmt(Long.parseLong(item.get("mrktTotAmt").toString()));
 
                             //모멘텀 세팅
-                            price.setMomentum(getMomentumScore(price.getEndPrice(), price.getStockCode()));
+                            price.setMomentum(getMomentumScore(price.getEndPrice(), price.getStockCode(), basDt));
 
                             //FIXME 중복 데이터 저장 방지 - 성능 개선 필요
                             if (stockPriceRepository.countByStockCodeAndBasDt(price.getStockCode(), price.getBasDt()) == 0) {
-                                priceList.add(price);
+                                // primary 전략이 IDENTITY로 설정되어 중복방지를 위해 개별 저장
+                                stockPriceRepository.save(price);
                             }
                         }
                         currentCount += 1;
                     }
-
-                    stockPriceRepository.saveAll(priceList);
 
                     if (currentCount < totalCount) {
                         getStockPrice(marketType, basDt, pageNum + 1, totalCount, currentCount + 1);
@@ -265,7 +264,7 @@ public class StockService {
 
             }
         } catch (Exception e) {
-            Logger.error("{}", e);
+            Logger.error(e);
         }
     }
 
@@ -581,7 +580,6 @@ public class StockService {
 
         } catch (Exception e) {
             Logger.error("{}", e);
-            e.printStackTrace();
         }
     }
 
@@ -662,7 +660,7 @@ public class StockService {
 
     private void setFinanceRatio(String corpCode, String year, QuarterCode quarter, CorpFinance finance) {
         //분기 데이터의 마지막일자 시가총액 불러오기
-        PriceMapper nowPrice = stockPriceRepository.findTopByStockCodeAndBasDt(finance.getStockCode(), finance.getEndDt());
+        PriceMapper nowPrice = stockPriceRepository.findTopByStockCodeAndBasDtBetweenOrderByBasDtDesc(finance.getStockCode(), finance.getEndDt().minusDays(5),finance.getEndDt());
 
         //전년도 재무정보
         CorpFinance byFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getCode(), String.valueOf(Integer.parseInt(year) - 1));
@@ -699,7 +697,7 @@ public class StockService {
 
     public void setFinanceIndicators(CorpFinance finance) {
         //분기 데이터의 마지막일자 시가총액 불러오기
-        PriceMapper nowPrice = stockPriceRepository.findTopByStockCodeAndBasDt(finance.getStockCode(), finance.getEndDt());
+        PriceMapper nowPrice = stockPriceRepository.findTopByStockCodeAndBasDtBetweenOrderByBasDtDesc(finance.getStockCode(), finance.getEndDt().minusDays(5),finance.getEndDt());
 
         if (nowPrice != null) {
             finance.setPSR(nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue());
@@ -752,18 +750,21 @@ public class StockService {
         stockAverageRepository.save(average);
     }
 
-    Integer getMomentumScore(Integer price, String code) {
+    Integer getMomentumScore(Integer price, String code, String basDt) {
+        LocalDate baseDate = DateUtils.toStringLocalDate(basDt);
         Integer score = 0;
 
+        //모멘텀은 전달 데이터를 가지고 온다.
         for (int i = 1; i <= 12; i++) {
-            LocalDate target = LocalDate.now().minusMonths(i);
+            LocalDate target = baseDate.minusMonths(i);
             if (target.getDayOfWeek().getValue() == 6) {
                 target = target.minusDays(1);
-            } else if (target.getDayOfWeek().getValue() == 7) {
+            } else if (target.getDayOfWeek().getValue() == 0) {
                 target = target.plusDays(1);
             }
 
-            PriceMapper bfPrice = stockPriceRepository.findTopByStockCodeAndBasDt(code, target);
+            //타켓일자의 값이 없을수 있어 5일전 데이터 까지 불러 최근날짜 데이터를 가지고 옴
+            PriceMapper bfPrice = stockPriceRepository.findTopByStockCodeAndBasDtBetweenOrderByBasDtDesc(code, target.minusDays(5),target);
 
             if (bfPrice != null) {
                 if (price > bfPrice.getEndPrice()) {

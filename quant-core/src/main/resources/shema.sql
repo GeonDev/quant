@@ -152,7 +152,7 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_AVERAGE (
 
 
 CREATE TABLE IF NOT EXISTS TB_STOCK_TRADE (
-  trade_id bigint NOT NULL AUTO_INCREMENT,
+  trade_id bigint varchar(12) NOT NULL,
   user_key varchar(12) ,
   trading_type varchar(11) ,
   trading_Dt date ,
