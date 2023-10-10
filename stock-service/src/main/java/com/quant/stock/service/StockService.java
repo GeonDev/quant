@@ -189,7 +189,7 @@ public class StockService {
 
     //주식 시세 받아오기
     @Transactional
-    public void getStockPrice(String marketType, String basDt, int pageNum, int totalCount, int currentCount) {
+    public void getStockPrice(String marketType, String basDt, int pageNum, int totalCount, int currentCount) throws IOException {
         Logger.debug("[DEBUG] SET STOCK DATA AT : {} {}",marketType, basDt);
 
         try {
@@ -263,7 +263,7 @@ public class StockService {
                 }
 
             }
-        } catch (Exception e) {
+        } catch (ParseException e) {
             Logger.error(e);
         }
     }
@@ -795,8 +795,7 @@ public class StockService {
 
         //선별된 주식리스트에 가중치를 부여
         for (String key : indicator) {
-            List<StockDto> list = financeSupport.findByStockOrderSet(date, key, portfolio.getRanges(), portfolio.getStockCount(), portfolio.getMomentumScore());
-
+            List<StockDto> list = financeSupport.findByStockOrderSet(date,  portfolio.getMarket(),  key, portfolio.getRanges(), portfolio.getStockCount(), portfolio.getMomentumScore());
             getStockOrderList(orderList, list);
         }
 
@@ -850,7 +849,7 @@ public class StockService {
 
 
 
-    public List<RecommendDto> getStockRecommendOne(LocalDate date, Integer value, Integer count, AmtRange range, Character ratioYn,  List<String> indicator , Integer momentum ) {
+    public List<RecommendDto> getStockRecommendOne(LocalDate date, String market, Integer value, Integer count, AmtRange range, Character ratioYn,  List<String> indicator , Integer momentum ) {
 
         if (indicator.isEmpty()) {
             throw new InvalidRequestException("포트폴리오 조건이 없음");
@@ -860,7 +859,7 @@ public class StockService {
 
         //선별된 주식리스트에 가중치를 부여
         for (String key : indicator) {
-            List<StockDto> list = financeSupport.findByStockOrderSet(date, key, range, count, momentum);
+            List<StockDto> list = financeSupport.findByStockOrderSet(date, market, key, range, count, momentum);
 
             getStockOrderList(orderList, list);
         }

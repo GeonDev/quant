@@ -33,6 +33,8 @@ public class Portfolio {
     //포트폴리오당 최대 종목개수
     Integer stockCount;
 
+    String market;
+
     //손절 퍼센트
     Integer lossCut;
 

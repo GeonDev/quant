@@ -34,12 +34,12 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
     }
 
     //인디케이터의 조건에 맞는 주식 리스트를 추출
-    public List<StockDto> findByStockOrderSet(LocalDate date, String indicator, AmtRange range, Integer limit, Integer momentum) {
+    public List<StockDto> findByStockOrderSet(LocalDate date, String market, String indicator, AmtRange range, Integer limit, Integer momentum) {
         return queryFactory.select(Projections
                 .constructor(StockDto.class, corpInfo.corpName, corpFinance.stockCode, stockPrice.endPrice))
                 .from(corpFinance)
                 .join(corpInfo).on(corpFinance.corpCode.eq(corpInfo.corpCode)).leftJoin(stockPrice).on(stockPrice.stockCode.eq(corpFinance.stockCode))
-                .where(stockPrice.basDt.eq(date), rangeSet(date, range), upperZero(indicator) , stockPrice.momentum.goe(momentum))
+                .where(stockPrice.basDt.eq(date), rangeSet(date, range), upperZero(indicator) , stockPrice.momentum.goe(momentum) ,marketType(market))
                 .limit(limit)
                 .orderBy(setOrderSpecifier(indicator))
                 .fetch();
@@ -110,14 +110,7 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
             default:
                 return corpFinance.revenue.gt(0);
         }
-
-
     }
-
-
-
-
-
 
     private BooleanExpression rangeSet(LocalDate date, AmtRange range) {
         if (range.equals(AmtRange.LOWER20)) {
@@ -133,6 +126,16 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
             Integer price = queryFactory.select(stockPrice.endPrice).from(stockPrice).where(stockPrice.basDt.eq(date)).orderBy(stockPrice.marketTotalAmt.desc()).fetch().get(199);
 
             return stockPrice.endPrice.goe(price);
+        }
+        return null;
+    }
+
+    private BooleanExpression marketType(String market) {
+        if (market.equalsIgnoreCase("KOSPI") ) {
+            return stockPrice.marketCode.eq("KOSPI");
+
+        } else if (market.equalsIgnoreCase("KOSDAQ")) {
+            return stockPrice.marketCode.eq("KOSDAQ");
         }
         return null;
     }

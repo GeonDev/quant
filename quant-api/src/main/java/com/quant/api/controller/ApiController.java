@@ -120,6 +120,7 @@ public class ApiController {
     //즉석 추천
     @GetMapping(value = "recommend/ones", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getOneRecommendStock(@RequestParam(value = "date", required = false, defaultValue = "") String date,
+                                               @RequestParam(value = "market", required = false, defaultValue = "ALL") String market,
                                                @RequestParam(value = "value", required = false, defaultValue = "10000000") Integer value,
                                                @RequestParam(value = "count", required = false, defaultValue = "20") Integer count,
                                                @RequestParam(value = "momentum", required = false, defaultValue = "0") Integer momentum,
@@ -130,7 +131,7 @@ public class ApiController {
 
         LocalDate targetDate = DateUtils.toStringLocalDate(date);
 
-        return ResponseEntity.ok(stockService.getStockRecommendOne(targetDate, value, count, range, ratioYn, indicator, momentum));
+        return ResponseEntity.ok(stockService.getStockRecommendOne(targetDate, market, value, count, range, ratioYn, indicator, momentum));
     }
 
     @PostMapping(value = "port", produces = MediaType.APPLICATION_JSON_VALUE)

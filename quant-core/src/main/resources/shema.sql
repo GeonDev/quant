@@ -166,6 +166,7 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_PORTFOLIO (
   user_key varchar(12) ,
   momentum_score int ,
   stock_count int ,
+  market varchar(10) ,
   ranges varchar(20) ,
   indicator varchar(512),
   rebalance varchar(256),
