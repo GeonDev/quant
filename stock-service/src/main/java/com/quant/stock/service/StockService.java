@@ -60,6 +60,7 @@ public class StockService {
 
     private final EmailService emailService;
 
+    private final TradeRepository tradeRepository;
     private final UserInfoRepository userInfoRepository;
     private final CorpInfoRepository corpInfoRepository;
     private final StockPriceRepository stockPriceRepository;
@@ -227,8 +228,8 @@ public class StockService {
                     JSONObject items = (JSONObject) body.get("items");
                     JSONArray itemList = (JSONArray) items.get("item");
 
-                    for (int i = 0; i < itemList.size(); i++) {
-                        JSONObject item = (JSONObject) itemList.get(i);
+                    for (Object o : itemList) {
+                        JSONObject item = (JSONObject) o;
                         StockPrice price = new StockPrice();
 
                         if (!item.get("itmsNm").toString().contains("스팩")) {
@@ -337,7 +338,8 @@ public class StockService {
 
                             //가격정보가 있는 데이터 인지 확인
                             if (stockPriceRepository.countByStockCode(getValue("stock_code", corp)) > 0) {
-                                CorpInfo code = corpInfoRepository.findById(getValue("corp_code", corp)).orElseGet(() -> new CorpInfo().builder()
+                                CorpInfo code = corpInfoRepository.findById(getValue("corp_code", corp))
+                                        .orElseGet(() -> new CorpInfo().builder()
                                         .corpCode(getValue("corp_code", corp))
                                         .stockCode(getValue("stock_code", corp))
                                         .corpName(getValue("corp_name", corp))
@@ -537,6 +539,7 @@ public class StockService {
         if (Integer.parseInt(year) < ApplicationConstants.LIMIT_YEAR) {
             return;
         }
+
         try {
             JSONParser keyParser = new JSONParser();
             Reader reader = new FileReader(signkey);
@@ -795,7 +798,7 @@ public class StockService {
 
         //선별된 주식리스트에 가중치를 부여
         for (String key : indicator) {
-            List<StockDto> list = financeSupport.findByStockOrderSet(date,  portfolio.getMarket(),  key, portfolio.getRanges(), portfolio.getStockCount(), portfolio.getMomentumScore());
+            List<StockDto> list = financeSupport.findByStockOrderSet(date, portfolio.getMarket(), key, portfolio.getRanges(), portfolio.getStockCount(), portfolio.getMomentumScore());
             getStockOrderList(orderList, list);
         }
 
@@ -813,13 +816,20 @@ public class StockService {
         int payForStock = portfolio.getTotalValue() / portfolio.getStockCount();
         for (StockOrder temp : orderList) {
 
-            result.add(RecommendDto.builder()
+            RecommendDto recommend = RecommendDto.builder()
                     .stockCode(temp.getStock().getStockCode())
                     .corpName(temp.getStock().getCorpName())
                     .price(temp.getStock().getEndPrice())
                     .count(getBuyStockCount(temp, payForStock, portfolio.getRatioYn(), date) )
-                    .build());
+                    .build();
+
+
+            //트레이딩 기록 추가
+            setTradeInfo(portfolio.getUserInfo().getUserKey(), recommend.getStockCode(), recommend.getCount() , recommend.getPrice());
+            result.add(recommend);
+
         }
+
 
         return result;
     }
@@ -845,6 +855,23 @@ public class StockService {
         }
 
         return stockCount;
+    }
+
+    //주식 로그 추가
+    private void setTradeInfo(String userKey, String stockCode, Integer stockCount, Integer price){
+        Trade trade = tradeRepository.findByUserKeyAndStockCode(userKey, stockCode)
+                .orElseGet(() -> Trade.builder()
+                        .userKey(userKey)
+                        .tradingDt(LocalDate.now())
+                        .stockCode(stockCode)
+                        .stockCount(0)
+                        .totalAsset(0)
+                        .average((double)0)
+                        .build()
+                );
+        trade.setStockCount(trade.getStockCount() + stockCount );
+        trade.setTotalAsset(trade.getTotalAsset() + (stockCount * price));
+        trade.setAverage(Math.floor(((double) trade.getTotalAsset() / trade.getStockCount()) * 100)/100.0 );
     }
 
 
@@ -893,9 +920,8 @@ public class StockService {
             StockDto item = list.get(i);
             boolean check = false;
 
-            for (int j = 0; j < orderList.size(); j++) {
-                if (item.getStockCode().equals(orderList.get(j).getStock().getStockCode())) {
-                    StockOrder order = orderList.get(j);
+            for (StockOrder order : orderList) {
+                if (item.getStockCode().equals(order.getStock().getStockCode())) {
                     //가중치를 추가로 부여 한다.
                     order.setOrder(order.getOrder() + list.size() - i);
                     //리스트에 데이터가 있음을 체크
