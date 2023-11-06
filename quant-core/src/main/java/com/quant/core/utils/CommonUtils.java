@@ -6,10 +6,24 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public class CommonUtils {
+
+    public static String getConcatList(List<String> list ){
+        StringBuffer sb = new StringBuffer();
+
+        for(String item : list ){
+            sb.append(item);
+            sb.append(",");
+        }
+        sb.setLength(sb.length()-1);
+
+        return sb.toString();
+    }
+
 
     public static void unZip(String ZipFilePath, String FilePath) throws IOException{
         File Destination_Directory = new File(FilePath);

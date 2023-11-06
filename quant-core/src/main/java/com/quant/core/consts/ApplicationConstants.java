@@ -11,8 +11,8 @@ public class ApplicationConstants {
     //오픈 dart의 최소 제공 연수
     public static final int LIMIT_YEAR = 2015;
 
-    //공공 데이터 포탈의 최대 열 개수
-    public static final int PAGE_SIZE = 1500;
+    //공공 데이터 포탈의 최대 열 개수(최대 1500)
+    public static final int PAGE_SIZE = 1000;
 
     public static final String API_GO_URL = "apis.data.go.kr";
 

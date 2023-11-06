@@ -1,14 +1,16 @@
 package com.quant.core.entity;
 
 import com.quant.core.enums.AmtRange;
-import lombok.Data;
-import lombok.ToString;
+import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 
 @Entity
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "TB_STOCK_PORTFOLIO")
 public class Portfolio {
 

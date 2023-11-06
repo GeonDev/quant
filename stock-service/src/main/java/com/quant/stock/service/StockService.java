@@ -54,6 +54,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.*;
 
+import static com.quant.core.utils.CommonUtils.getConcatList;
+
 @Service
 @RequiredArgsConstructor
 public class StockService {
@@ -74,6 +76,27 @@ public class StockService {
 
     @Value("${file.path}")
     String filePath;
+
+
+    @Transactional
+    public void setPortfolio(String userKey, Integer momentum, Integer value, Integer count, Integer lossCut, AmtRange range, String market, List<String> indicator, List<String> rebalance ,Character ratio ,String comment ){
+        portfolioRepository.save(
+                Portfolio.builder()
+                        .userInfo(userInfoRepository.findByUserKey(userKey).orElseThrow( () -> new InvalidRequestException("사용자 정보 없음")) )
+                        .totalValue(value)
+                        .momentumScore(momentum)
+                        .stockCount(count)
+                        .lossCut(lossCut)
+                        .market(market)
+                        .ranges(range)
+                        .indicator(getConcatList(indicator) )
+                        .rebalance(getConcatList(rebalance))
+                        .ratioYn(ratio)
+                        .comment(comment)
+                        .build()
+        );
+    }
+
 
     @Transactional
     public void setUserInfo(String email) {
@@ -887,7 +910,6 @@ public class StockService {
         //선별된 주식리스트에 가중치를 부여
         for (String key : indicator) {
             List<StockDto> list = financeSupport.findByStockOrderSet(date, market, key, range, count, momentum);
-
             getStockOrderList(orderList, list);
         }
 

@@ -81,7 +81,6 @@ public class CorpFinance implements Serializable {
     //주가 순이익 성장율
     Double PGE;
 
-
     @PrePersist
     public void prePersist() {
         this.revenue = (this.revenue == null ? 0 : this.revenue);

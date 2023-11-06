@@ -117,7 +117,7 @@ public class ApiController {
     }
 
 
-    //즉석 추천
+    //일회성 추천
     @GetMapping(value = "recommend/ones", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getOneRecommendStock(@RequestParam(value = "date", required = false, defaultValue = "") String date,
                                                @RequestParam(value = "market", required = false, defaultValue = "ALL") String market,
@@ -128,24 +128,27 @@ public class ApiController {
                                                @RequestParam(value = "ratio", required = false, defaultValue = "Y") Character ratioYn,
                                                @RequestParam(value = "indicator", required = false, defaultValue = "") List<String> indicator
     ) {
-
         LocalDate targetDate = DateUtils.toStringLocalDate(date);
-
         return ResponseEntity.ok(stockService.getStockRecommendOne(targetDate, market, value, count, range, ratioYn, indicator, momentum));
     }
 
+    // 포트폴리오 세팅
     @PostMapping(value = "port", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity setPort(@RequestParam(value = "key") String userKey,
-                                  @RequestParam(value = "momentum", required = false, defaultValue = "6") Integer momentum,
+                                  @RequestParam(value = "momentum", required = false, defaultValue = "0") Integer momentum,
                                   @RequestParam(value = "value", defaultValue = "10000000") Integer value,
                                   @RequestParam(value = "count", defaultValue = "20") Integer count,
-                                  @RequestParam(value = "loss", defaultValue = "50") Integer loss,
+                                  @RequestParam(value = "loss", defaultValue = "50") Integer lossCut,
                                   @RequestParam(value = "range", defaultValue = "ALL") AmtRange range,
+                                  @RequestParam(value = "market", defaultValue = "ALL") String market,
                                   @RequestParam(value = "indicator", defaultValue = "") List<String> indicator,
                                   @RequestParam(value = "rebalance", defaultValue = "") List<String> rebalance,
                                   @RequestParam(value = "ratio", defaultValue = "Y") Character ratio,
                                   @RequestParam(value = "comment", defaultValue = "") String comment) {
-        return ResponseEntity.ok("");
+
+        stockService.setPortfolio(userKey, momentum, value, count, lossCut, range, market, indicator, rebalance, ratio, comment );
+
+        return ResponseEntity.ok("Set Portfolio ");
     }
 
 }
