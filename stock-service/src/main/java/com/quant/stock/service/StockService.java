@@ -13,6 +13,7 @@ import com.quant.core.repository.mapping.PriceMapper;
 import com.quant.core.dto.RecommendDto;
 import com.quant.core.repository.*;
 import com.quant.core.repository.support.CorpFinanceRepositorySupport;
+import com.quant.core.repository.support.TradeRepositorySupport;
 import com.quant.core.utils.CommonUtils;
 import com.quant.core.utils.DateUtils;
 import com.quant.stock.model.EmailMessage;
@@ -70,6 +71,7 @@ public class StockService {
     private final StockAverageRepository stockAverageRepository;
     private final PortfolioRepository portfolioRepository;
     private final CorpFinanceRepositorySupport financeSupport;
+    private final TradeRepositorySupport tradeRepositorySupport;
 
     @Value("${signkey.path}")
     String signkey;
@@ -846,11 +848,9 @@ public class StockService {
                     .count(getBuyStockCount(temp, payForStock, portfolio.getRatioYn(), date) )
                     .build();
 
-
             //트레이딩 기록 추가
-            setTradeInfo(portfolio.getUserInfo().getUserKey(), recommend.getStockCode(), recommend.getCount() , recommend.getPrice());
+            setTradeInfo(portfolio.getUserInfo().getUserKey(), recommend.getStockCode(), recommend.getCount(), TradingType.BUY,recommend.getPrice());
             result.add(recommend);
-
         }
 
 
@@ -881,20 +881,24 @@ public class StockService {
     }
 
     //주식 로그 추가
-    private void setTradeInfo(String userKey, String stockCode, Integer stockCount, Integer price){
-        Trade trade = tradeRepository.findByUserKeyAndStockCode(userKey, stockCode)
-                .orElseGet(() -> Trade.builder()
-                        .userKey(userKey)
+    private void setTradeInfo(String userKey, String stockCode, Integer count, TradingType tradingType, Integer price){
+
+        UserInfo userInfo = userInfoRepository.findByUserKey(userKey).orElseThrow( () -> new InvalidRequestException("일치하는 사용자가 없습니다.") );
+
+        if(tradingType.equals(TradingType.SELL)){
+            Integer nowCount = tradeRepositorySupport.countByTradeStock(userKey, stockCode);
+            if(nowCount < count){
+                new InvalidRequestException("보유 주식 수 보다 더 많이 매도 할수 없습니다. (보유 수량 : " +nowCount + " 매도 수량 : " + count + " )" );
+            }
+        }
+
+        tradeRepository.save(Trade.builder()
                         .tradingDt(LocalDate.now())
+                        .price(price)
                         .stockCode(stockCode)
-                        .stockCount(0)
-                        .totalAsset(0)
-                        .average((double)0)
-                        .build()
-                );
-        trade.setStockCount(trade.getStockCount() + stockCount );
-        trade.setTotalAsset(trade.getTotalAsset() + (stockCount * price));
-        trade.setAverage(Math.floor(((double) trade.getTotalAsset() / trade.getStockCount()) * 100)/100.0 );
+                        .stockCount(count)
+                        .tradeType(tradingType)
+                .build() );
     }
 
 

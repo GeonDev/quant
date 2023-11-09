@@ -32,4 +32,7 @@ public class UserInfo implements Serializable {
     @OneToMany(mappedBy = "userInfo")
     List<Portfolio> portfolios;
 
+    @OneToMany(mappedBy = "userInfo")
+    List<Trade> tradeHistory;
+
 }

@@ -21,7 +21,7 @@ public class Portfolio {
             strategy = "com.quant.core.config.KeyGenerator")
     String portfolioId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_key")
     @ToString.Exclude
     UserInfo userInfo;
@@ -55,6 +55,5 @@ public class Portfolio {
     Character ratioYn;
 
     String comment;
-
 
 }

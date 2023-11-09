@@ -2,14 +2,11 @@ package com.quant.core.repository.support;
 
 import com.quant.core.dto.StockDto;
 import com.quant.core.entity.CorpFinance;
-import com.quant.core.dto.FinanceSimpleDto;
-import com.quant.core.entity.StockPrice;
 import com.quant.core.enums.AmtRange;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;

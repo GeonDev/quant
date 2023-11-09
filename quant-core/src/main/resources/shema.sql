@@ -73,14 +73,14 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_AVERAGE (
 );
 
 
-CREATE TABLE IF NOT EXISTS TB_STOCK_TRADE (
-  trade_id bigint varchar(12) NOT NULL,
+CREATE TABLE IF NOT EXISTS TB_STOCK_TRADE_HISTORY (
+  trade_id bigint NOT NULL,
   user_key varchar(12) ,
   stock_code varchar(11) ,
   trading_Dt date ,
-  total_asset int ,
-  average double ,
+  price int ,
   stock_count int ,
+  trade_type varchar(11) ,
   PRIMARY KEY (trade_id)
 );
 

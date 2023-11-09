@@ -2,5 +2,8 @@ package com.quant.core.enums;
 
 public enum TradingType {
     BUY,
-    SELL
+    SELL,
+    DEPOSIT,
+    WITHDRAW
+
 }
