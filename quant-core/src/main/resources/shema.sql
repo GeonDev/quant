@@ -6,6 +6,7 @@ drop all objects;
 CREATE TABLE IF NOT EXISTS TB_CORP_INFO (
   corp_code varchar(11) NOT NULL,
   corp_name text,
+  funding bigint,
   stock_code varchar(11) ,
   income varchar(10) ,
   state varchar(10) DEFAULT 'ACTIVE',
@@ -86,6 +87,7 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_TRADE_HISTORY (
 
 CREATE TABLE IF NOT EXISTS TB_STOCK_PORTFOLIO (
   portfolio_id varchar(12) NOT NULL,
+  total_value bigint,
   user_key varchar(12) ,
   momentum_score int ,
   stock_count int ,

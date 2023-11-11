@@ -29,6 +29,8 @@ public class UserInfo implements Serializable {
 
     String email;
 
+    Long funding;
+
     @OneToMany(mappedBy = "userInfo")
     List<Portfolio> portfolios;
 

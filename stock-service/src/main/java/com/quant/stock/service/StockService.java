@@ -655,7 +655,6 @@ public class StockService {
                     if (item.getSj_div().equalsIgnoreCase("IS")) {
                         if (item.getAccount_nm().equals("매출액")) {
                             finance.setRevenue(value);
-
                         } else if (item.getAccount_nm().equals("영업이익")) {
                             finance.setOperatingProfit(value);
                         } else if (item.getAccount_nm().equals("당기순이익")) {
@@ -838,7 +837,7 @@ public class StockService {
 
         //현재 가격, 포트폴리오 상 자본금을 고려하여 구매 개수 설정
         List<RecommendDto> result = new ArrayList<>();
-        int payForStock = portfolio.getTotalValue() / portfolio.getStockCount();
+        int payForStock = portfolio.getTotalValue().intValue() / portfolio.getStockCount();
         for (StockOrder temp : orderList) {
 
             RecommendDto recommend = RecommendDto.builder()
@@ -881,15 +880,27 @@ public class StockService {
     }
 
     //주식 로그 추가
-    private void setTradeInfo(String userKey, String stockCode, Integer count, TradingType tradingType, Integer price){
+    @Transactional
+    private void setTradeInfo(String userKey, String stockCode, Integer count, TradingType trading, Integer price){
 
         UserInfo userInfo = userInfoRepository.findByUserKey(userKey).orElseThrow( () -> new InvalidRequestException("일치하는 사용자가 없습니다.") );
 
-        if(tradingType.equals(TradingType.SELL)){
+        Long totalPrice = (long) price * count;
+
+        if(trading.equals(TradingType.SELL)){
             Integer nowCount = tradeRepositorySupport.countByTradeStock(userKey, stockCode);
             if(nowCount < count){
-                new InvalidRequestException("보유 주식 수 보다 더 많이 매도 할수 없습니다. (보유 수량 : " +nowCount + " 매도 수량 : " + count + " )" );
+                throw new InvalidRequestException("보유 주식 수 보다 더 많이 매도 할수 없습니다. (보유 수량 : " +nowCount + " 매도 수량 : " + count + " )" );
             }
+
+            userInfo.setFunding( userInfo.getFunding() + totalPrice );
+
+        } else if(trading.equals(TradingType.BUY) ){
+            if(userInfo.getFunding() - totalPrice < 0 ){
+                throw new InvalidRequestException("보유 금액이 부족합니다.");
+            }
+
+            userInfo.setFunding( userInfo.getFunding() - totalPrice );
         }
 
         tradeRepository.save(Trade.builder()
@@ -897,8 +908,10 @@ public class StockService {
                         .price(price)
                         .stockCode(stockCode)
                         .stockCount(count)
-                        .tradeType(tradingType)
+                        .tradeType(trading)
                 .build() );
+
+        userInfoRepository.save(userInfo);
     }
 
 

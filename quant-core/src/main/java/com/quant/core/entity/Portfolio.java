@@ -27,7 +27,7 @@ public class Portfolio {
     UserInfo userInfo;
 
     //전체 투자금
-    Integer totalValue;
+    Long totalValue;
 
     //최소 모멘텀
     Integer momentumScore;
