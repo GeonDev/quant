@@ -26,8 +26,9 @@ public class ApiController {
 
 
     @PostMapping(value = "user", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity setUser(@RequestParam(value = "email") String email) {
-        stockService.setUserInfo(email);
+    public ResponseEntity setUser(@RequestParam(value = "email") String email ,
+                                  @RequestParam(value = "funding", required = false, defaultValue = "1000000") Long funding) {
+        stockService.setUserInfo(email ,funding);
 
         return ResponseEntity.ok("User Set");
     }
@@ -136,7 +137,7 @@ public class ApiController {
     @PostMapping(value = "port", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity setPort(@RequestParam(value = "key") String userKey,
                                   @RequestParam(value = "momentum", required = false, defaultValue = "0") Integer momentum,
-                                  @RequestParam(value = "value", defaultValue = "10000000") Integer value,
+                                  @RequestParam(value = "value", defaultValue = "10000000") Long value,
                                   @RequestParam(value = "count", defaultValue = "20") Integer count,
                                   @RequestParam(value = "loss", defaultValue = "50") Integer lossCut,
                                   @RequestParam(value = "range", defaultValue = "ALL") AmtRange range,

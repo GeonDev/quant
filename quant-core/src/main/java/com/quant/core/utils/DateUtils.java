@@ -10,7 +10,6 @@ import java.util.Locale;
 
 public class DateUtils {
 
-
     public static String getStringNowDateFormat(String pattern) {
         return getStringDateFormat(LocalDateTime.now(),pattern);
     }
@@ -18,7 +17,6 @@ public class DateUtils {
     public static String getStringDateFormat(LocalDateTime ldt , String pattern){
         return ldt.format(DateTimeFormatter.ofPattern(pattern).withLocale(Locale.KOREAN));
     }
-
 
     public static LocalDate toStringLocalDate(String str){
 

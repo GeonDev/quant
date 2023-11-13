@@ -61,6 +61,7 @@ import static com.quant.core.utils.CommonUtils.getConcatList;
 @RequiredArgsConstructor
 public class StockService {
 
+    private final RestTemplate restTemplate;
     private final EmailService emailService;
 
     private final TradeRepository tradeRepository;
@@ -74,14 +75,14 @@ public class StockService {
     private final TradeRepositorySupport tradeRepositorySupport;
 
     @Value("${signkey.path}")
-    String signkey;
+    String signKey;
 
     @Value("${file.path}")
     String filePath;
 
 
     @Transactional
-    public void setPortfolio(String userKey, Integer momentum, Integer value, Integer count, Integer lossCut, AmtRange range, String market, List<String> indicator, List<String> rebalance ,Character ratio ,String comment ){
+    public void setPortfolio(String userKey, Integer momentum, Long value, Integer count, Integer lossCut, AmtRange range, String market, List<String> indicator, List<String> rebalance ,Character ratio ,String comment ){
         portfolioRepository.save(
                 Portfolio.builder()
                         .userInfo(userInfoRepository.findByUserKey(userKey).orElseThrow( () -> new InvalidRequestException("사용자 정보 없음")) )
@@ -101,7 +102,7 @@ public class StockService {
 
 
     @Transactional
-    public void setUserInfo(String email) {
+    public void setUserInfo(String email, Long funding) {
 
         if(!email.matches("^[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*@[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*.[a-zA-Z]{2,3}$")){
             throw new InvalidRequestException("이메일 형식이 맞지 않습니다.");
@@ -109,9 +110,9 @@ public class StockService {
 
         if (userInfoRepository.countByEmail(email) == 0) {
 
-
             UserInfo info = UserInfo.builder()
                     .email(email)
+                    .funding(funding)
                     .build();
             userInfoRepository.save(info);
 
@@ -156,7 +157,7 @@ public class StockService {
     //공휴일 체크 기능
     private boolean checkIsDayOff(LocalDate targetDate) throws IOException, ParseException {
         JSONParser keyParser = new JSONParser();
-        Reader reader = new FileReader(signkey);
+        Reader reader = new FileReader(signKey);
         JSONObject jsonObject = (JSONObject) keyParser.parse(reader);
 
         boolean isDayOff = false;
@@ -173,7 +174,6 @@ public class StockService {
                 .queryParam("numOfRows", 10)
                 .build();
 
-        RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
 
         JSONParser parser = new JSONParser();
@@ -216,11 +216,11 @@ public class StockService {
     //주식 시세 받아오기
     @Transactional
     public void getStockPrice(String marketType, String basDt, int pageNum, int totalCount, int currentCount) throws IOException {
-        Logger.debug("[DEBUG] SET STOCK DATA AT : {} {}",marketType, basDt);
+        Logger.debug("[DEBUG] SET STOCK DATA AT : {} {} | page : {}",marketType, basDt, pageNum);
 
         try {
             JSONParser keyParser = new JSONParser();
-            Reader reader = new FileReader(signkey);
+            Reader reader = new FileReader(signKey);
             JSONObject jsonObject = (JSONObject) keyParser.parse(reader);
 
             UriComponents uri = UriComponentsBuilder
@@ -236,7 +236,6 @@ public class StockService {
                     .queryParam("basDt", basDt)
                     .build();
 
-            RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
 
             JSONParser parser = new JSONParser();
@@ -300,7 +299,7 @@ public class StockService {
     public void getDartCorpCodeInfo()  {
         try {
         JSONParser keyParser = new JSONParser();
-        Reader reader = new FileReader(signkey);
+        Reader reader = new FileReader(signKey);
         JSONObject jsonObject = (JSONObject) keyParser.parse(reader);
 
 
@@ -318,7 +317,6 @@ public class StockService {
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         HttpEntity<String> entity = new HttpEntity<String>(headers);
 
-        RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<byte[]> response = restTemplate.exchange(uri.toString(), HttpMethod.GET, entity, byte[].class);
 
 
@@ -460,7 +458,7 @@ public class StockService {
         try {
 
         JSONParser keyParser = new JSONParser();
-        Reader reader = new FileReader(signkey);
+        Reader reader = new FileReader(signKey);
         JSONObject jsonObject = (JSONObject) keyParser.parse(reader);
 
 
@@ -475,7 +473,6 @@ public class StockService {
                 .queryParam("reprt_code", quarter.getCode())
                 .build();
 
-        RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
 
 
@@ -567,7 +564,7 @@ public class StockService {
 
         try {
             JSONParser keyParser = new JSONParser();
-            Reader reader = new FileReader(signkey);
+            Reader reader = new FileReader(signKey);
             JSONObject jsonObject = (JSONObject) keyParser.parse(reader);
 
         UriComponents uri = UriComponentsBuilder
@@ -581,7 +578,6 @@ public class StockService {
                 .queryParam("reprt_code", quarter.getCode())
                 .build();
 
-        RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
 
 
@@ -881,7 +877,7 @@ public class StockService {
 
     //주식 로그 추가
     @Transactional
-    private void setTradeInfo(String userKey, String stockCode, Integer count, TradingType trading, Integer price){
+    public void setTradeInfo(String userKey, String stockCode, Integer count, TradingType trading, Integer price){
 
         UserInfo userInfo = userInfoRepository.findByUserKey(userKey).orElseThrow( () -> new InvalidRequestException("일치하는 사용자가 없습니다.") );
 
