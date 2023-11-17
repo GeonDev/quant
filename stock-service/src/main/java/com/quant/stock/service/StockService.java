@@ -296,7 +296,7 @@ public class StockService {
                         JSONObject item = (JSONObject) o;
 
                         if (!item.get("itmsNm").toString().matches("^*\\d호.*$") &&
-                                !ApplicationConstants.BAN_STOCK_NAME_LIST.contains(item.get("itmsNm").toString().toLowerCase(Locale.ROOT))) {
+                                !checkInvalidStockName(item.get("itmsNm").toString().toLowerCase(Locale.ROOT))) {
 
                             StockPrice price = StockPrice.builder()
                                     .stockCode(item.get("srtnCd").toString())
@@ -365,7 +365,6 @@ public class StockService {
 
             ResponseEntity<byte[]> response = restTemplate.exchange(uri.toString(), HttpMethod.GET, entity, byte[].class);
 
-
             File lOutFile = new File(filePath + "temp.zip");
             FileOutputStream lFileOutputStream = new FileOutputStream(lOutFile);
             lFileOutputStream.write(response.getBody());
@@ -390,7 +389,7 @@ public class StockService {
 
                         //스팩, 투자회사등 제외
                         if (!getValue("corp_name", corp).matches("^*\\d호.*$") &&
-                                !ApplicationConstants.BAN_STOCK_NAME_LIST.contains(getValue("corp_name", corp).toLowerCase(Locale.ROOT))) {
+                                !checkInvalidStockName(getValue("corp_name", corp).toLowerCase(Locale.ROOT))) {
 
                             //가격정보가 있는 데이터 인지 확인
                             if (stockPriceRepository.countByStockCode(getValue("stock_code", corp)) > 0) {
@@ -434,11 +433,28 @@ public class StockService {
 
     }
 
-    private static String getValue(String tag, Element element) {
+
+    private String getValue(String tag, Element element) {
         NodeList nodes = element.getElementsByTagName(tag).item(0).getChildNodes();
         Node node = (Node) nodes.item(0);
         return node.getTextContent().trim();
     }
+
+    private boolean checkInvalidStockName(String name){
+
+        String[] list = ApplicationConstants.BAN_STOCK_NAME_LIST.split("\\|");
+
+        for(String t: list){
+            if(name.contains(t)){
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+
+
 
     // 다중회사 재무 제표 다운로드
     @Async
