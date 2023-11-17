@@ -8,11 +8,11 @@ public class ApplicationConstants {
 
     public static final String SPLIT_KEY = ",";
 
-    //오픈 dart의 최소 제공 연수
-    public static final int LIMIT_YEAR = 2015;
+    //OPEN DART 제공 연도(최소 2015년)
+    public static final int LIMIT_YEAR = 2020;
 
     //공공 데이터 포탈의 최대 열 개수(최대 1000 ~ 1500)
-    public static final int PAGE_SIZE = 750;
+    public static final int PAGE_SIZE = 1000;
 
     public static final String API_GO_URL = "apis.data.go.kr";
 
