@@ -130,6 +130,7 @@ public class StockService {
 
 
     //주식 시장 활성일 체크 -> 활성일 일 경우 주식 시세 받기
+    @Transactional
     public void getKrxDailyInfo(LocalDate targetDate) {
         //주말은 무시
         if (targetDate.getDayOfWeek().getValue() == 0 || targetDate.getDayOfWeek().getValue() == 6) {
@@ -156,6 +157,44 @@ public class StockService {
             Logger.error("{}", e);
         }
     }
+
+    //주식 가격 정보 대용량 추가
+    @Async
+    @Transactional
+    public void getKrxDailyInfo(LocalDate startDate, LocalDate endDate) {
+
+        List<StockPrice> priceList = new ArrayList<>();
+
+        while (!endDate.equals(startDate)) {
+            //타겟 날짜 깊은 복사 수행
+            LocalDate targetDate = LocalDate.of(startDate.getYear(), startDate.getMonthValue(), startDate.getDayOfMonth());
+
+            //타겟 일자가 주말이 아닐때 수행
+            if (targetDate.getDayOfWeek().getValue() != 0 && targetDate.getDayOfWeek().getValue() != 6) {
+                //공공정보 API는 1일전 데이터가 최신, 전일 데이터는 오후 1시에 갱신, 월요일에 금요일 데이터 갱신
+                if (targetDate.getDayOfWeek().getValue() == 1) {
+                    targetDate = targetDate.minusDays(3);
+                } else {
+                    targetDate = targetDate.minusDays(1);
+                }
+
+                try {
+                    if (!checkIsDayOff(targetDate)) {
+                        getStockPrice(priceList, StockType.KOSPI.name(), DateUtils.toLocalDateString(targetDate), 1, 1);
+                        getStockPrice(priceList, StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate), 1, 1);
+                    }
+                } catch (Exception e) {
+                    Logger.error("{}", e);
+                }
+            }
+
+            startDate = startDate.plusDays(1);
+        }
+
+        //bulk insert 실행
+        stockPriceRepository.saveAll(priceList);
+    }
+
 
     //공휴일 체크 기능
     private boolean checkIsDayOff(LocalDate targetDate) throws IOException, ParseException {
@@ -217,7 +256,6 @@ public class StockService {
 
 
     //주식 시세 받아오기
-    @Transactional
     public void getStockPrice(List<StockPrice> priceList, String marketType, String basDt, int pageNum, int currentCount) throws IOException, InterruptedException {
 
         try {
@@ -289,7 +327,7 @@ public class StockService {
                     if (currentCount < totalCount) {
                         //공공 API에서 이상 감지를 하지 않도록 sleep 추가
                         Thread.sleep(500l);
-                        Logger.info("[INFO] SET STOCK DATA AT : {} {} ({}/{}) ",marketType, basDt, pageNum, totalCount);
+                        Logger.info("[INFO] SET STOCK DATA AT : {} {} ({}/{}) ", marketType, basDt, pageNum, totalCount);
 
                         getStockPrice(priceList, marketType, basDt, pageNum + 1, currentCount + 1);
                     }

@@ -42,11 +42,9 @@ public class ApiController {
             LocalDate startDate = DateUtils.toStringLocalDate(sDate);
             LocalDate endDate = DateUtils.toStringLocalDate(eDate);
 
-            //기준일자 까지 반복
-            while (!endDate.equals(startDate)) {
-                stockService.getKrxDailyInfo(startDate);
-                startDate = startDate.plusDays(1);
-            }
+            //비동기 수행
+            stockService.getKrxDailyInfo(startDate, endDate);
+
         } else if (StringUtils.hasText(sDate) && !StringUtils.hasText(eDate)) {
             stockService.getKrxDailyInfo(DateUtils.toStringLocalDate(sDate));
         } else {
@@ -93,7 +91,7 @@ public class ApiController {
             LocalDate startDate = DateUtils.toStringLocalDate(sDate);
             LocalDate endDate = DateUtils.toStringLocalDate(eDate);
 
-            //비동기 호출을 위해서 stockService 외부에서 실행시킴
+            //비동기 호출을 위해서 stockService 외부에서 실행시
             while (!endDate.equals(endDate)) {
                 stockService.setStockPriceAverage(startDate);
                 startDate.plusDays(1);
