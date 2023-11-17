@@ -14,6 +14,8 @@ public class ApplicationConstants {
     //공공 데이터 포탈의 최대 열 개수(최대 1000 ~ 1500)
     public static final int PAGE_SIZE = 1000;
 
+    public static final String BAN_STOCK_NAME_LIST = "스팩|기업인수|투자회사|인베스트먼트|매니지먼트|유한회사|유한공사|유동화전문|리미티드|펀드|llc|limited|ltd|fund";
+
     public static final String API_GO_URL = "apis.data.go.kr";
 
     public static final String DART_API_URL = "opendart.fss.or.kr";

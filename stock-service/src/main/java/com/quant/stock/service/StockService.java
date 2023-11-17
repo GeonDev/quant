@@ -82,17 +82,17 @@ public class StockService {
 
 
     @Transactional
-    public void setPortfolio(String userKey, Integer momentum, Long value, Integer count, Integer lossCut, AmtRange range, String market, List<String> indicator, List<String> rebalance ,Character ratio ,String comment ){
+    public void setPortfolio(String userKey, Integer momentum, Long value, Integer count, Integer lossCut, AmtRange range, String market, List<String> indicator, List<String> rebalance, Character ratio, String comment) {
         portfolioRepository.save(
                 Portfolio.builder()
-                        .userInfo(userInfoRepository.findByUserKey(userKey).orElseThrow( () -> new InvalidRequestException("사용자 정보 없음")) )
+                        .userInfo(userInfoRepository.findByUserKey(userKey).orElseThrow(() -> new InvalidRequestException("사용자 정보 없음")))
                         .totalValue(value)
                         .momentumScore(momentum)
                         .stockCount(count)
                         .lossCut(lossCut)
                         .market(market)
                         .ranges(range)
-                        .indicator(getConcatList(indicator) )
+                        .indicator(getConcatList(indicator))
                         .rebalance(getConcatList(rebalance))
                         .ratioYn(ratio)
                         .comment(comment)
@@ -104,7 +104,7 @@ public class StockService {
     @Transactional
     public void setUserInfo(String email, Long funding) {
 
-        if(!email.matches("^[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*@[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*.[a-zA-Z]{2,3}$")){
+        if (!email.matches("^[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*@[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*.[a-zA-Z]{2,3}$")) {
             throw new InvalidRequestException("이메일 형식이 맞지 않습니다.");
         }
 
@@ -118,9 +118,9 @@ public class StockService {
 
 
             emailService.sendMail(EmailMessage.builder()
-                            .to(email)
-                            .subject("[Quent] 신규 이메일등록")
-                            .message("신규 등록 되었습니다.")
+                    .to(email)
+                    .subject("[Quent] 신규 이메일등록")
+                    .message("신규 등록 되었습니다.")
                     .build());
 
         } else {
@@ -130,7 +130,6 @@ public class StockService {
 
 
     //주식 시장 활성일 체크 -> 활성일 일 경우 주식 시세 받기
-    //@Async
     public void getKrxDailyInfo(LocalDate targetDate) {
         //주말은 무시
         if (targetDate.getDayOfWeek().getValue() == 0 || targetDate.getDayOfWeek().getValue() == 6) {
@@ -146,8 +145,12 @@ public class StockService {
 
         try {
             if (!checkIsDayOff(targetDate)) {
-                getStockPrice(StockType.KOSPI.name(), DateUtils.toLocalDateString(targetDate), 1, 0, 1);
-                getStockPrice(StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate), 1, 0, 1);
+                List<StockPrice> priceList = new ArrayList<>();
+                getStockPrice(priceList, StockType.KOSPI.name(), DateUtils.toLocalDateString(targetDate), 1, 1);
+                getStockPrice(priceList, StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate), 1, 1);
+
+                //bulk insert 실행
+                stockPriceRepository.saveAll(priceList);
             }
         } catch (Exception e) {
             Logger.error("{}", e);
@@ -215,8 +218,7 @@ public class StockService {
 
     //주식 시세 받아오기
     @Transactional
-    public void getStockPrice(String marketType, String basDt, int pageNum, int totalCount, int currentCount) throws IOException {
-        Logger.debug("[DEBUG] SET STOCK DATA AT : {} {} | page : {}",marketType, basDt, pageNum);
+    public void getStockPrice(List<StockPrice> priceList, String marketType, String basDt, int pageNum, int currentCount) throws IOException, InterruptedException {
 
         try {
             JSONParser keyParser = new JSONParser();
@@ -244,7 +246,7 @@ public class StockService {
             JSONObject header = (JSONObject) response.get("header");
             JSONObject body = (JSONObject) response.get("body");
 
-            totalCount = Integer.parseInt(body.get("totalCount").toString());
+            int totalCount = Integer.parseInt(body.get("totalCount").toString());
 
             if (header.get("resultMsg").toString().equals(ApplicationConstants.REQUEST_MSG) && totalCount > 0) {
 
@@ -254,36 +256,42 @@ public class StockService {
 
                     for (Object o : itemList) {
                         JSONObject item = (JSONObject) o;
-                        StockPrice price = new StockPrice();
 
-                        if (!item.get("itmsNm").toString().contains("스팩")) {
-                            price.setStockCode(item.get("srtnCd").toString());
-                            price.setMarketCode(marketType);
-                            price.setBasDt(DateUtils.toStringLocalDate(basDt));
-                            price.setVolume(Integer.parseInt(item.get("trqu").toString()));
-                            price.setStartPrice(Integer.parseInt(item.get("mkp").toString()));
-                            price.setEndPrice(Integer.parseInt(item.get("clpr").toString()));
-                            price.setLowPrice(Integer.parseInt(item.get("lopr").toString()));
-                            price.setHighPrice(Integer.parseInt(item.get("hipr").toString()));
-                            price.setDailyRange(Double.parseDouble(item.get("vs").toString()));
-                            price.setDailyRatio(Double.parseDouble(item.get("fltRt").toString()));
-                            price.setStockTotalCnt(Long.parseLong(item.get("lstgStCnt").toString()));
-                            price.setMarketTotalAmt(Long.parseLong(item.get("mrktTotAmt").toString()));
+                        if (!item.get("itmsNm").toString().matches("^*\\d호.*$") &&
+                                !ApplicationConstants.BAN_STOCK_NAME_LIST.contains(item.get("itmsNm").toString().toLowerCase(Locale.ROOT))) {
+
+                            StockPrice price = StockPrice.builder()
+                                    .stockCode(item.get("srtnCd").toString())
+                                    .marketCode(marketType)
+                                    .basDt(DateUtils.toStringLocalDate(basDt))
+                                    .volume(Integer.parseInt(item.get("trqu").toString()))
+                                    .startPrice(Integer.parseInt(item.get("mkp").toString()))
+                                    .endPrice(Integer.parseInt(item.get("clpr").toString()))
+                                    .lowPrice(Integer.parseInt(item.get("lopr").toString()))
+                                    .highPrice(Integer.parseInt(item.get("hipr").toString()))
+                                    .dailyRange(Double.parseDouble(item.get("vs").toString()))
+                                    .dailyRatio(Double.parseDouble(item.get("fltRt").toString()))
+                                    .stockTotalCnt(Long.parseLong(item.get("lstgStCnt").toString()))
+                                    .marketTotalAmt(Long.parseLong(item.get("mrktTotAmt").toString()))
+                                    .build();
 
                             //모멘텀 세팅
                             price.setMomentum(getMomentumScore(price.getEndPrice(), price.getStockCode(), basDt));
 
-                            //FIXME 중복 데이터 저장 방지 - 성능 개선 필요
+                            //중복 데이터 체크
                             if (stockPriceRepository.countByStockCodeAndBasDt(price.getStockCode(), price.getBasDt()) == 0) {
-                                // primary 전략이 IDENTITY로 설정되어 중복방지를 위해 개별 저장
-                                stockPriceRepository.save(price);
+                                priceList.add(price);
                             }
                         }
                         currentCount += 1;
                     }
 
                     if (currentCount < totalCount) {
-                        getStockPrice(marketType, basDt, pageNum + 1, totalCount, currentCount + 1);
+                        //공공 API에서 이상 감지를 하지 않도록 sleep 추가
+                        Thread.sleep(500l);
+                        Logger.info("[INFO] SET STOCK DATA AT : {} {} ({}/{}) ",marketType, basDt, pageNum, totalCount);
+
+                        getStockPrice(priceList, marketType, basDt, pageNum + 1, currentCount + 1);
                     }
                 }
 
@@ -296,28 +304,28 @@ public class StockService {
 
     //상장 회사 고유 정보 받아오기
     @Transactional
-    public void getDartCorpCodeInfo()  {
+    public void getDartCorpCodeInfo() {
         try {
-        JSONParser keyParser = new JSONParser();
-        Reader reader = new FileReader(signKey);
-        JSONObject jsonObject = (JSONObject) keyParser.parse(reader);
+            JSONParser keyParser = new JSONParser();
+            Reader reader = new FileReader(signKey);
+            JSONObject jsonObject = (JSONObject) keyParser.parse(reader);
 
 
-        UriComponents uri = UriComponentsBuilder
-                .newInstance()
-                .scheme("https")
-                .host(ApplicationConstants.DART_API_URL)
-                .path(ApplicationConstants.DART_CORP_CODE_URI)
-                .queryParam("crtfc_key", jsonObject.get("dart"))
-                .build();
+            UriComponents uri = UriComponentsBuilder
+                    .newInstance()
+                    .scheme("https")
+                    .host(ApplicationConstants.DART_API_URL)
+                    .path(ApplicationConstants.DART_CORP_CODE_URI)
+                    .queryParam("crtfc_key", jsonObject.get("dart"))
+                    .build();
 
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(List.of(MediaType.APPLICATION_OCTET_STREAM));
-        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        HttpEntity<String> entity = new HttpEntity<String>(headers);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setAccept(List.of(MediaType.APPLICATION_OCTET_STREAM));
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            HttpEntity<String> entity = new HttpEntity<String>(headers);
 
-        ResponseEntity<byte[]> response = restTemplate.exchange(uri.toString(), HttpMethod.GET, entity, byte[].class);
+            ResponseEntity<byte[]> response = restTemplate.exchange(uri.toString(), HttpMethod.GET, entity, byte[].class);
 
 
             File lOutFile = new File(filePath + "temp.zip");
@@ -343,36 +351,23 @@ public class StockService {
                     if (getValue("stock_code", corp) != null && StringUtils.hasText(getValue("stock_code", corp))) {
 
                         //스팩, 투자회사등 제외
-                        if (!getValue("corp_name", corp).contains("스팩") &&
-                                !getValue("corp_name", corp).contains("기업인수") &&
-                                !getValue("corp_name", corp).contains("투자회사") &&
-                                !getValue("corp_name", corp).contains("인베스트먼트") &&
-                                !getValue("corp_name", corp).contains("매니지먼트") &&
-                                !getValue("corp_name", corp).contains("유한회사") &&
-                                !getValue("corp_name", corp).contains("유한공사") &&
-                                !getValue("corp_name", corp).contains("유동화전문") &&
-                                !getValue("corp_name", corp).contains("리미티드") &&
-                                !getValue("corp_name", corp).contains("펀드") &&
-                                !getValue("corp_name", corp).matches("^*\\d호.*$") &&
-                                !getValue("corp_name", corp).toLowerCase(Locale.ROOT).contains("llc") &&
-                                !getValue("corp_name", corp).toLowerCase(Locale.ROOT).contains("limited") &&
-                                !getValue("corp_name", corp).toLowerCase(Locale.ROOT).contains("ltd") &&
-                                !getValue("corp_name", corp).toLowerCase(Locale.ROOT).contains("fund")) {
+                        if (!getValue("corp_name", corp).matches("^*\\d호.*$") &&
+                                !ApplicationConstants.BAN_STOCK_NAME_LIST.contains(getValue("corp_name", corp).toLowerCase(Locale.ROOT))) {
 
                             //가격정보가 있는 데이터 인지 확인
                             if (stockPriceRepository.countByStockCode(getValue("stock_code", corp)) > 0) {
                                 CorpInfo code = corpInfoRepository.findById(getValue("corp_code", corp))
                                         .orElseGet(() -> new CorpInfo().builder()
-                                        .corpCode(getValue("corp_code", corp))
-                                        .stockCode(getValue("stock_code", corp))
-                                        .corpName(getValue("corp_name", corp))
-                                        .state(CorpState.ACTIVE)
-                                        .build());
+                                                .corpCode(getValue("corp_code", corp))
+                                                .stockCode(getValue("stock_code", corp))
+                                                .corpName(getValue("corp_name", corp))
+                                                .state(CorpState.ACTIVE)
+                                                .build());
 
                                 //체크 일자 업데이트
                                 code.setCheckDt(LocalDate.now());
 
-                                if (code.getCorpName().contains("은행") || code.getCorpName().contains("금융")) {
+                                if (code.getCorpName().contains("은행") || code.getCorpName().contains("금융") || code.getCorpName().contains("캐피탈")) {
                                     code.setCorpType(CorpType.BANK);
                                 } else if (code.getCorpName().contains("지주") || code.getCorpName().contains("홀딩스")) {
                                     code.setCorpType(CorpType.HOLDING);
@@ -457,23 +452,23 @@ public class StockService {
 
         try {
 
-        JSONParser keyParser = new JSONParser();
-        Reader reader = new FileReader(signKey);
-        JSONObject jsonObject = (JSONObject) keyParser.parse(reader);
+            JSONParser keyParser = new JSONParser();
+            Reader reader = new FileReader(signKey);
+            JSONObject jsonObject = (JSONObject) keyParser.parse(reader);
 
 
-        UriComponents uri = UriComponentsBuilder
-                .newInstance()
-                .scheme("https")
-                .host(ApplicationConstants.DART_API_URL)
-                .path(ApplicationConstants.DART_STOCK_FINANCE_MULTI_URI)
-                .queryParam("crtfc_key", jsonObject.get("dart"))
-                .queryParam("corp_code", sb)
-                .queryParam("bsns_year", year)
-                .queryParam("reprt_code", quarter.getCode())
-                .build();
+            UriComponents uri = UriComponentsBuilder
+                    .newInstance()
+                    .scheme("https")
+                    .host(ApplicationConstants.DART_API_URL)
+                    .path(ApplicationConstants.DART_STOCK_FINANCE_MULTI_URI)
+                    .queryParam("crtfc_key", jsonObject.get("dart"))
+                    .queryParam("corp_code", sb)
+                    .queryParam("bsns_year", year)
+                    .queryParam("reprt_code", quarter.getCode())
+                    .build();
 
-        ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
+            ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
 
 
             ObjectMapper mapper = new ObjectMapper();
@@ -567,18 +562,18 @@ public class StockService {
             Reader reader = new FileReader(signKey);
             JSONObject jsonObject = (JSONObject) keyParser.parse(reader);
 
-        UriComponents uri = UriComponentsBuilder
-                .newInstance()
-                .scheme("https")
-                .host(ApplicationConstants.DART_API_URL)
-                .path(ApplicationConstants.DART_STOCK_FINANCE_SINGLE_URI)
-                .queryParam("crtfc_key", jsonObject.get("dart"))
-                .queryParam("corp_code", corpCode)
-                .queryParam("bsns_year", year)
-                .queryParam("reprt_code", quarter.getCode())
-                .build();
+            UriComponents uri = UriComponentsBuilder
+                    .newInstance()
+                    .scheme("https")
+                    .host(ApplicationConstants.DART_API_URL)
+                    .path(ApplicationConstants.DART_STOCK_FINANCE_SINGLE_URI)
+                    .queryParam("crtfc_key", jsonObject.get("dart"))
+                    .queryParam("corp_code", corpCode)
+                    .queryParam("bsns_year", year)
+                    .queryParam("reprt_code", quarter.getCode())
+                    .build();
 
-        ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
+            ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
 
 
             ObjectMapper mapper = new ObjectMapper();
@@ -589,7 +584,8 @@ public class StockService {
             if (response.getStatus().equals("000")) {
                 //같은 기간 데이터가 있는지 확인
                 List<CorpFinance> financeList = new ArrayList<>();
-                List<FinanceItem> financeSrcList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {});
+                List<FinanceItem> financeSrcList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {
+                });
 
                 //재무제표에 한국이 아닌 데이터 삭제
                 checkChinaStock(financeSrcList);
@@ -683,7 +679,7 @@ public class StockService {
 
     private void setFinanceRatio(String corpCode, String year, QuarterCode quarter, CorpFinance finance) {
         //분기 데이터의 마지막일자 시가총액 불러오기
-        PriceMapper nowPrice = stockPriceRepository.findTopByStockCodeAndBasDtBetweenOrderByBasDtDesc(finance.getStockCode(), finance.getEndDt().minusDays(5),finance.getEndDt());
+        PriceMapper nowPrice = stockPriceRepository.findTopByStockCodeAndBasDtBetweenOrderByBasDtDesc(finance.getStockCode(), finance.getEndDt().minusDays(5), finance.getEndDt());
 
         //전년도 재무정보
         CorpFinance byFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getCode(), String.valueOf(Integer.parseInt(year) - 1));
@@ -720,7 +716,7 @@ public class StockService {
 
     public void setFinanceIndicators(CorpFinance finance) {
         //분기 데이터의 마지막일자 시가총액 불러오기
-        PriceMapper nowPrice = stockPriceRepository.findTopByStockCodeAndBasDtBetweenOrderByBasDtDesc(finance.getStockCode(), finance.getEndDt().minusDays(5),finance.getEndDt());
+        PriceMapper nowPrice = stockPriceRepository.findTopByStockCodeAndBasDtBetweenOrderByBasDtDesc(finance.getStockCode(), finance.getEndDt().minusDays(5), finance.getEndDt());
 
         if (nowPrice != null) {
             finance.setPSR(nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue());
@@ -786,8 +782,8 @@ public class StockService {
                 target = target.plusDays(1);
             }
 
-            //타켓일자의 값이 없을수 있어 5일전 데이터 까지 불러 최근날짜 데이터를 가지고 옴
-            PriceMapper bfPrice = stockPriceRepository.findTopByStockCodeAndBasDtBetweenOrderByBasDtDesc(code, target.minusDays(5),target);
+            //타켓일자의 값이 없을수 있어 7일전 데이터 까지 불러 최근날짜 데이터를 가지고 옴
+            PriceMapper bfPrice = stockPriceRepository.findTopByStockCodeAndBasDtBetweenOrderByBasDtDesc(code, target.minusDays(7), target);
 
             if (bfPrice != null) {
                 if (price > bfPrice.getEndPrice()) {
@@ -840,11 +836,11 @@ public class StockService {
                     .stockCode(temp.getStock().getStockCode())
                     .corpName(temp.getStock().getCorpName())
                     .price(temp.getStock().getEndPrice())
-                    .count(getBuyStockCount(temp, payForStock, portfolio.getRatioYn(), date) )
+                    .count(getBuyStockCount(temp, payForStock, portfolio.getRatioYn(), date))
                     .build();
 
             //트레이딩 기록 추가
-            setTradeInfo(portfolio.getUserInfo().getUserKey(), recommend.getStockCode(), recommend.getCount(), TradingType.BUY,recommend.getPrice());
+            setTradeInfo(portfolio.getUserInfo().getUserKey(), recommend.getStockCode(), recommend.getCount(), TradingType.BUY, recommend.getPrice());
             result.add(recommend);
         }
 
@@ -853,22 +849,22 @@ public class StockService {
     }
 
     //주식 구매 개수 계산
-    private Integer getBuyStockCount(StockOrder target, int pay, Character ratioYn, LocalDate date){
+    private Integer getBuyStockCount(StockOrder target, int pay, Character ratioYn, LocalDate date) {
         int stockCount = pay / target.getStock().getEndPrice();
 
-        if(ratioYn.equals('Y') ){
+        if (ratioYn.equals('Y')) {
             List<StockAverage> averageList = stockAverageRepository.findByStockCodeAndTarDt(target.getStock().getStockCode(), date);
 
-            if(averageList != null && !averageList.isEmpty()){
+            if (averageList != null && !averageList.isEmpty()) {
                 int upperCount = averageList.size();
 
                 //해당 주식의 종가가 평균가보다 작은 경우 구매 개수 삭감
-                for(StockAverage average : averageList){
-                    if(target.getStock().getEndPrice() < average.getPrice()){
-                        upperCount --;
+                for (StockAverage average : averageList) {
+                    if (target.getStock().getEndPrice() < average.getPrice()) {
+                        upperCount--;
                     }
                 }
-                stockCount = stockCount * (upperCount/averageList.size());
+                stockCount = stockCount * (upperCount / averageList.size());
             }
         }
 
@@ -877,42 +873,41 @@ public class StockService {
 
     //주식 로그 추가
     @Transactional
-    public void setTradeInfo(String userKey, String stockCode, Integer count, TradingType trading, Integer price){
+    public void setTradeInfo(String userKey, String stockCode, Integer count, TradingType trading, Integer price) {
 
-        UserInfo userInfo = userInfoRepository.findByUserKey(userKey).orElseThrow( () -> new InvalidRequestException("일치하는 사용자가 없습니다.") );
+        UserInfo userInfo = userInfoRepository.findByUserKey(userKey).orElseThrow(() -> new InvalidRequestException("일치하는 사용자가 없습니다."));
 
         Long totalPrice = (long) price * count;
 
-        if(trading.equals(TradingType.SELL)){
+        if (trading.equals(TradingType.SELL)) {
             Integer nowCount = tradeRepositorySupport.countByTradeStock(userKey, stockCode);
-            if(nowCount < count){
-                throw new InvalidRequestException("보유 주식 수 보다 더 많이 매도 할수 없습니다. (보유 수량 : " +nowCount + " 매도 수량 : " + count + " )" );
+            if (nowCount < count) {
+                throw new InvalidRequestException("보유 주식 수 보다 더 많이 매도 할수 없습니다. (보유 수량 : " + nowCount + " 매도 수량 : " + count + " )");
             }
 
-            userInfo.setFunding( userInfo.getFunding() + totalPrice );
+            userInfo.setFunding(userInfo.getFunding() + totalPrice);
 
-        } else if(trading.equals(TradingType.BUY) ){
-            if(userInfo.getFunding() - totalPrice < 0 ){
+        } else if (trading.equals(TradingType.BUY)) {
+            if (userInfo.getFunding() - totalPrice < 0) {
                 throw new InvalidRequestException("보유 금액이 부족합니다.");
             }
 
-            userInfo.setFunding( userInfo.getFunding() - totalPrice );
+            userInfo.setFunding(userInfo.getFunding() - totalPrice);
         }
 
         tradeRepository.save(Trade.builder()
-                        .tradingDt(LocalDate.now())
-                        .price(price)
-                        .stockCode(stockCode)
-                        .stockCount(count)
-                        .tradeType(trading)
-                .build() );
+                .tradingDt(LocalDate.now())
+                .price(price)
+                .stockCode(stockCode)
+                .stockCount(count)
+                .tradeType(trading)
+                .build());
 
         userInfoRepository.save(userInfo);
     }
 
 
-
-    public List<RecommendDto> getStockRecommendOne(LocalDate date, String market, Integer value, Integer count, AmtRange range, Character ratioYn,  List<String> indicator , Integer momentum ) {
+    public List<RecommendDto> getStockRecommendOne(LocalDate date, String market, Integer value, Integer count, AmtRange range, Character ratioYn, List<String> indicator, Integer momentum) {
 
         if (indicator.isEmpty()) {
             throw new InvalidRequestException("포트폴리오 조건이 없음");
@@ -943,7 +938,7 @@ public class StockService {
                     .stockCode(temp.getStock().getStockCode())
                     .corpName(temp.getStock().getCorpName())
                     .price(temp.getStock().getEndPrice())
-                    .count(getBuyStockCount(temp, payForStock, ratioYn, date ))
+                    .count(getBuyStockCount(temp, payForStock, ratioYn, date))
                     .build());
         }
 

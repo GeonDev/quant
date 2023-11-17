@@ -23,13 +23,20 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        jdbc.batch_size: 100
+        order_inserts: true
+        order_updates: true
   datasource:
     driver-class-name: org.h2.Driver
-    url: jdbc:h2:tcp://localhost/~/db_stock;MODE=MySQL;
+    url: jdbc:h2:tcp://localhost/~/db_stock;MODE=MySQL;AUTO_SERVER=TRUE
     username: sa
     password:
     hikari:
       maximum-pool-size: 50
+      #mysql의 경우 다음 설정을 추가
+      data-source-properties:
+        rewriteBatchedStatements: true
+
   sql:
     init:
       mode: never

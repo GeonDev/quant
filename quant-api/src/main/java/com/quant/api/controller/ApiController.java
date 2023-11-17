@@ -93,6 +93,7 @@ public class ApiController {
             LocalDate startDate = DateUtils.toStringLocalDate(sDate);
             LocalDate endDate = DateUtils.toStringLocalDate(eDate);
 
+            //비동기 호출을 위해서 stockService 외부에서 실행시킴
             while (!endDate.equals(endDate)) {
                 stockService.setStockPriceAverage(startDate);
                 startDate.plusDays(1);

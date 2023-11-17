@@ -1,6 +1,13 @@
 package com.quant.core.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.id.enhanced.SequenceStyleGenerator;
+import org.hibernate.annotations.Parameter;
 
 
 import javax.persistence.*;
@@ -8,11 +15,24 @@ import java.time.LocalDate;
 
 @Entity
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "TB_STOCK_PRICE")
 public class StockPrice {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "price-sequence-generator")
+    @GenericGenerator(
+            name = "price-sequence-generator",
+            strategy = "sequence",
+            parameters = {
+                    @Parameter(name = SequenceStyleGenerator.SEQUENCE_PARAM, value = SequenceStyleGenerator.DEF_SEQUENCE_NAME),
+                    @Parameter(name = SequenceStyleGenerator.INITIAL_PARAM, value = "1"),
+                    @Parameter(name = SequenceStyleGenerator.INCREMENT_PARAM, value = "5"),
+                    @Parameter(name = AvailableSettings.PREFERRED_POOLED_OPTIMIZER, value = "pooled-lo")
+            }
+    )
     Long priceId;
 
     String stockCode;
