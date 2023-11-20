@@ -129,7 +129,6 @@ public class StockService {
     }
 
 
-    //주식 시장 활성일 체크 -> 활성일 일 경우 주식 시세 받기
     @Transactional
     public void getKrxDailyInfo(LocalDate targetDate) {
         //주말은 무시
@@ -146,53 +145,27 @@ public class StockService {
 
         try {
             if (!checkIsDayOff(targetDate)) {
-                List<StockPrice> priceList = new ArrayList<>();
-                getStockPrice(priceList, StockType.KOSPI.name(), DateUtils.toLocalDateString(targetDate), 1, 1);
-                getStockPrice(priceList, StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate), 1, 1);
+                getStockPrice(StockType.KOSPI.name(), DateUtils.toLocalDateString(targetDate), 1, 1);
+                getStockPrice(StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate), 1, 1);
 
-                //bulk insert 실행
-                stockPriceRepository.saveAll(priceList);
             }
         } catch (Exception e) {
             Logger.error("{}", e);
         }
     }
 
-    //주식 가격 정보 대용량 추가
+    //기간 내 주식 가격 정보 추가
     @Async
     @Transactional
     public void getKrxDailyInfo(LocalDate startDate, LocalDate endDate) {
 
-        List<StockPrice> priceList = new ArrayList<>();
-
         while (!endDate.equals(startDate)) {
-            //타겟 날짜 깊은 복사 수행
+            //while 루프에 영향을 주지 않기 위해 타겟날짜 신규 생성
             LocalDate targetDate = LocalDate.of(startDate.getYear(), startDate.getMonthValue(), startDate.getDayOfMonth());
-
-            //타겟 일자가 주말이 아닐때 수행
-            if (targetDate.getDayOfWeek().getValue() != 0 && targetDate.getDayOfWeek().getValue() != 6) {
-                //공공정보 API는 1일전 데이터가 최신, 전일 데이터는 오후 1시에 갱신, 월요일에 금요일 데이터 갱신
-                if (targetDate.getDayOfWeek().getValue() == 1) {
-                    targetDate = targetDate.minusDays(3);
-                } else {
-                    targetDate = targetDate.minusDays(1);
-                }
-
-                try {
-                    if (!checkIsDayOff(targetDate)) {
-                        getStockPrice(priceList, StockType.KOSPI.name(), DateUtils.toLocalDateString(targetDate), 1, 1);
-                        getStockPrice(priceList, StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate), 1, 1);
-                    }
-                } catch (Exception e) {
-                    Logger.error("{}", e);
-                }
-            }
-
+            getKrxDailyInfo(targetDate);
             startDate = startDate.plusDays(1);
         }
 
-        //bulk insert 실행
-        stockPriceRepository.saveAll(priceList);
     }
 
 
@@ -256,7 +229,8 @@ public class StockService {
 
 
     //주식 시세 받아오기
-    public void getStockPrice(List<StockPrice> priceList, String marketType, String basDt, int pageNum, int currentCount) throws IOException, InterruptedException {
+    public void getStockPrice(String marketType, String basDt, int pageNum, int currentCount) throws IOException, InterruptedException {
+        Logger.info("[INFO] SET STOCK DATA AT : {} {} (page {}) ", marketType, basDt, pageNum);
 
         try {
             JSONParser keyParser = new JSONParser();
@@ -287,6 +261,7 @@ public class StockService {
             int totalCount = Integer.parseInt(body.get("totalCount").toString());
 
             if (header.get("resultMsg").toString().equals(ApplicationConstants.REQUEST_MSG) && totalCount > 0) {
+                List<StockPrice> priceList = new ArrayList<>();
 
                 if (!body.get("items").toString().isEmpty()) {
                     JSONObject items = (JSONObject) body.get("items");
@@ -295,8 +270,7 @@ public class StockService {
                     for (Object o : itemList) {
                         JSONObject item = (JSONObject) o;
 
-                        if (!item.get("itmsNm").toString().matches("^*\\d호.*$") &&
-                                !checkInvalidStockName(item.get("itmsNm").toString().toLowerCase(Locale.ROOT))) {
+                        if (checkInvalidStockName(item.get("itmsNm").toString().toLowerCase(Locale.ROOT))) {
 
                             StockPrice price = StockPrice.builder()
                                     .stockCode(item.get("srtnCd").toString())
@@ -313,8 +287,8 @@ public class StockService {
                                     .marketTotalAmt(Long.parseLong(item.get("mrktTotAmt").toString()))
                                     .build();
 
-                            //모멘텀 세팅
-                            price.setMomentum(getMomentumScore(price.getEndPrice(), price.getStockCode(), basDt));
+                                //모멘텀 세팅
+                                price.setMomentum(getMomentumScore(price.getEndPrice(), price.getStockCode(), basDt));
 
                             //중복 데이터 체크
                             if (stockPriceRepository.countByStockCodeAndBasDt(price.getStockCode(), price.getBasDt()) == 0) {
@@ -324,12 +298,13 @@ public class StockService {
                         currentCount += 1;
                     }
 
+                    //데이터 저장
+                    stockPriceRepository.saveAll(priceList);
+
                     if (currentCount < totalCount) {
                         //공공 API에서 이상 감지를 하지 않도록 sleep 추가
-                        Thread.sleep(500l);
-                        Logger.info("[INFO] SET STOCK DATA AT : {} {} ({}/{}) ", marketType, basDt, pageNum, totalCount);
-
-                        getStockPrice(priceList, marketType, basDt, pageNum + 1, currentCount + 1);
+                        Thread.sleep(300l);
+                        getStockPrice(marketType, basDt, pageNum + 1, currentCount + 1);
                     }
                 }
 
@@ -376,20 +351,23 @@ public class StockService {
             factory.setIgnoringElementContentWhitespace(true);
             DocumentBuilder builder = factory.newDocumentBuilder();
 
-            Document document = builder.parse(filePath + "CORPCODE.xml");
+            Document document = builder.parse(new File( filePath + "CORPCODE.xml"));
+            document.getDocumentElement().normalize();
+
             NodeList corpList = document.getElementsByTagName("list");
 
             List<CorpInfo> codeList = new ArrayList<>();
 
             for (int i = 0; i < corpList.getLength(); i++) {
-                Element corp = (Element) corpList.item(i);
-                if (corp != null) {
+                Node node = corpList.item(i);
+                if(node.getNodeType() == Node.ELEMENT_NODE){
+                    Element corp = (Element) node;
+
                     //상장된 회사만 저장
                     if (getValue("stock_code", corp) != null && StringUtils.hasText(getValue("stock_code", corp))) {
 
                         //스팩, 투자회사등 제외
-                        if (!getValue("corp_name", corp).matches("^*\\d호.*$") &&
-                                !checkInvalidStockName(getValue("corp_name", corp).toLowerCase(Locale.ROOT))) {
+                        if ( checkInvalidStockName(getValue("corp_name", corp).toLowerCase(Locale.ROOT))) {
 
                             //가격정보가 있는 데이터 인지 확인
                             if (stockPriceRepository.countByStockCode(getValue("stock_code", corp)) > 0) {
@@ -437,10 +415,13 @@ public class StockService {
     private String getValue(String tag, Element element) {
         NodeList nodes = element.getElementsByTagName(tag).item(0).getChildNodes();
         Node node = (Node) nodes.item(0);
-        return node.getTextContent().trim();
+        return node.getNodeValue();
     }
 
     private boolean checkInvalidStockName(String name){
+        if(name.matches("^*\\d호.*$")){
+            return false;
+        }
 
         String[] list = ApplicationConstants.BAN_STOCK_NAME_LIST.split("\\|");
 

@@ -22,17 +22,7 @@ import java.time.LocalDate;
 public class StockPrice {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "price-sequence-generator")
-    @GenericGenerator(
-            name = "price-sequence-generator",
-            strategy = "sequence",
-            parameters = {
-                    @Parameter(name = SequenceStyleGenerator.SEQUENCE_PARAM, value = SequenceStyleGenerator.DEF_SEQUENCE_NAME),
-                    @Parameter(name = SequenceStyleGenerator.INITIAL_PARAM, value = "1"),
-                    @Parameter(name = SequenceStyleGenerator.INCREMENT_PARAM, value = "5"),
-                    @Parameter(name = AvailableSettings.PREFERRED_POOLED_OPTIMIZER, value = "pooled-lo")
-            }
-    )
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long priceId;
 
     String stockCode;

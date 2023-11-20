@@ -2,6 +2,7 @@
 
 drop all objects;
 
+CREATE SEQUENCE HIBERNATE_SEQUENCE START WITH 1 INCREMENT BY 1;
 
 CREATE TABLE IF NOT EXISTS TB_CORP_INFO (
   corp_code varchar(11) NOT NULL,
@@ -75,7 +76,7 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_AVERAGE (
 
 
 CREATE TABLE IF NOT EXISTS TB_STOCK_TRADE_HISTORY (
-  trade_id bigint NOT NULL,
+  trade_id bigint NOT NULL AUTO_INCREMENT,
   user_key varchar(12) ,
   stock_code varchar(11) ,
   trading_Dt date ,

@@ -42,7 +42,7 @@ public class ApiController {
             LocalDate startDate = DateUtils.toStringLocalDate(sDate);
             LocalDate endDate = DateUtils.toStringLocalDate(eDate);
 
-            //비동기 수행
+            //대량 업데이트의 경우 비동기 수행
             stockService.getKrxDailyInfo(startDate, endDate);
 
         } else if (StringUtils.hasText(sDate) && !StringUtils.hasText(eDate)) {
@@ -54,7 +54,7 @@ public class ApiController {
         return ResponseEntity.ok("SET PRICE");
     }
 
-
+    //price 정보가 없을 경우 업데이트 안함
     @PostMapping(value = "code", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity setCorpCode() {
         stockService.getDartCorpCodeInfo();

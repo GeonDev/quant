@@ -19,7 +19,6 @@ public class DateUtils {
     }
 
     public static LocalDate toStringLocalDate(String str){
-
         if(StringUtils.hasText(str)){
             if(str.matches("^[\\d]{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$") ){
                 return LocalDate.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
