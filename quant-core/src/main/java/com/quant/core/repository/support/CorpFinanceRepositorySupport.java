@@ -36,7 +36,7 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
                 .constructor(StockDto.class, corpInfo.corpName, corpFinance.stockCode, stockPrice.endPrice))
                 .from(corpFinance)
                 .join(corpInfo).on(corpFinance.corpCode.eq(corpInfo.corpCode)).leftJoin(stockPrice).on(stockPrice.stockCode.eq(corpFinance.stockCode))
-                .where(stockPrice.basDt.eq(date), rangeSet(date, range), upperZero(indicator) , stockPrice.momentum.goe(momentum) ,marketType(market))
+                .where(stockPrice.basDt.eq(date), rangeSet(date, range), upperZero(indicator) , corpInfo.momentum.goe(momentum) ,marketType(market))
                 .limit(limit)
                 .orderBy(setOrderSpecifier(indicator))
                 .fetch();

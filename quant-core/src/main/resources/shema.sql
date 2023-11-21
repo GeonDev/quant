@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS TB_CORP_INFO (
   corp_type varchar(11) ,
   message text ,
   check_dt date,
+  momentum int,
   PRIMARY KEY (corp_code)
 );
 
@@ -61,9 +62,10 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_PRICE (
   daily_ratio double ,
   stock_total_cnt bigint ,
   market_total_amt bigint ,
-  momentum int,
   PRIMARY KEY (price_id)
 );
+
+CREATE INDEX tsp_idx01 ON TB_STOCK_PRICE (stock_code, bas_dt);
 
 
 CREATE TABLE IF NOT EXISTS TB_STOCK_AVERAGE (

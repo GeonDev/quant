@@ -13,9 +13,9 @@ import java.util.List;
 public interface StockPriceRepository extends JpaRepository<StockPrice, Long> {
     List<StockPrice> findByStockCodeAndBasDtBefore(String code, LocalDate date, Pageable page);
 
-    List<StockPrice> findByBasDtBetween(LocalDate sDate, LocalDate eDate);
-
     PriceMapper findTopByStockCodeAndBasDtBetweenOrderByBasDtDesc(String code, LocalDate sDate, LocalDate eDate);
+
+    PriceMapper findTopByStockCodeOrderByBasDtDesc(String code);
 
     Integer countByStockCodeAndBasDt(String code, LocalDate date);
 

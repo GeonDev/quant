@@ -60,12 +60,4 @@ public class StockPrice {
     // 종가 * 상장 주식수
     Long marketTotalAmt;
 
-    //종가 - (n 개월전 종가)의 +/- 값, 7이상일때 상승
-    Integer momentum;
-
-    @PrePersist
-    public void prePersist() {
-        this.momentum = (this.momentum == null ? 0 : this.momentum);
-    }
-
 }

@@ -145,9 +145,12 @@ public class StockService {
 
         try {
             if (!checkIsDayOff(targetDate)) {
-                getStockPrice(StockType.KOSPI.name(), DateUtils.toLocalDateString(targetDate), 1, 1);
-                getStockPrice(StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate), 1, 1);
+                List<StockPrice> priceList = new ArrayList<>();
 
+                getStockPrice(priceList, StockType.KOSPI.name(), DateUtils.toLocalDateString(targetDate), 1, 1);
+                getStockPrice(priceList, StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate), 1, 1);
+
+                stockPriceRepository.saveAll(priceList);
             }
         } catch (Exception e) {
             Logger.error("{}", e);
@@ -159,13 +162,35 @@ public class StockService {
     @Transactional
     public void getKrxDailyInfo(LocalDate startDate, LocalDate endDate) {
 
+        List<StockPrice> priceList = new ArrayList<>();
+
         while (!endDate.equals(startDate)) {
             //while 루프에 영향을 주지 않기 위해 타겟날짜 신규 생성
             LocalDate targetDate = LocalDate.of(startDate.getYear(), startDate.getMonthValue(), startDate.getDayOfMonth());
-            getKrxDailyInfo(targetDate);
+
+            if (targetDate.getDayOfWeek().getValue() != 0 && targetDate.getDayOfWeek().getValue() != 6) {
+                //공공정보 API는 1일전 데이터가 최신, 전일 데이터는 오후 1시에 갱신, 월요일에 금요일 데이터 갱신
+                if (targetDate.getDayOfWeek().getValue() == 1) {
+                    targetDate = targetDate.minusDays(3);
+                } else {
+                    targetDate = targetDate.minusDays(1);
+                }
+
+                try {
+                    if (!checkIsDayOff(targetDate)) {
+                        getStockPrice(priceList, StockType.KOSPI.name(), DateUtils.toLocalDateString(targetDate), 1, 1);
+                        getStockPrice(priceList, StockType.KOSDAQ.name(), DateUtils.toLocalDateString(targetDate), 1, 1);
+                    }
+                } catch (Exception e) {
+                    Logger.error("{}", e);
+                }
+            }
+
             startDate = startDate.plusDays(1);
         }
 
+        //벌크 Insert 수행
+        stockPriceRepository.saveAll(priceList);
     }
 
 
@@ -229,7 +254,7 @@ public class StockService {
 
 
     //주식 시세 받아오기
-    public void getStockPrice(String marketType, String basDt, int pageNum, int currentCount) throws IOException, InterruptedException {
+    public void getStockPrice(List<StockPrice> priceList, String marketType, String basDt, int pageNum, int currentCount) throws IOException, InterruptedException {
         Logger.info("[INFO] SET STOCK DATA AT : {} {} (page {}) ", marketType, basDt, pageNum);
 
         try {
@@ -261,8 +286,6 @@ public class StockService {
             int totalCount = Integer.parseInt(body.get("totalCount").toString());
 
             if (header.get("resultMsg").toString().equals(ApplicationConstants.REQUEST_MSG) && totalCount > 0) {
-                List<StockPrice> priceList = new ArrayList<>();
-
                 if (!body.get("items").toString().isEmpty()) {
                     JSONObject items = (JSONObject) body.get("items");
                     JSONArray itemList = (JSONArray) items.get("item");
@@ -287,9 +310,6 @@ public class StockService {
                                     .marketTotalAmt(Long.parseLong(item.get("mrktTotAmt").toString()))
                                     .build();
 
-                                //모멘텀 세팅
-                                price.setMomentum(getMomentumScore(price.getEndPrice(), price.getStockCode(), basDt));
-
                             //중복 데이터 체크
                             if (stockPriceRepository.countByStockCodeAndBasDt(price.getStockCode(), price.getBasDt()) == 0) {
                                 priceList.add(price);
@@ -298,13 +318,10 @@ public class StockService {
                         currentCount += 1;
                     }
 
-                    //데이터 저장
-                    stockPriceRepository.saveAll(priceList);
-
                     if (currentCount < totalCount) {
                         //공공 API에서 이상 감지를 하지 않도록 sleep 추가
-                        Thread.sleep(300l);
-                        getStockPrice(marketType, basDt, pageNum + 1, currentCount + 1);
+                        Thread.sleep(300);
+                        getStockPrice(priceList ,marketType, basDt, pageNum + 1, currentCount + 1);
                     }
                 }
 
@@ -388,6 +405,9 @@ public class StockService {
                                     code.setCorpType(CorpType.HOLDING);
                                 }
 
+                                //모멘텀 세팅
+                                code.setMomentum(getMomentumScore(code.getStockCode()));
+
                                 codeList.add(code);
                             }
                         }
@@ -433,8 +453,6 @@ public class StockService {
 
         return true;
     }
-
-
 
 
     // 다중회사 재무 제표 다운로드
@@ -804,26 +822,23 @@ public class StockService {
         stockAverageRepository.save(average);
     }
 
-    Integer getMomentumScore(Integer price, String code, String basDt) {
-        LocalDate baseDate = DateUtils.toStringLocalDate(basDt);
+    Integer getMomentumScore(String code) {
         Integer score = 0;
+
+        //저장된 가장 최신 가격정보 추출
+        PriceMapper lastPrice = stockPriceRepository.findTopByStockCodeOrderByBasDtDesc(code);
 
         //모멘텀은 전달 데이터를 가지고 온다.
         for (int i = 1; i <= 12; i++) {
-            LocalDate target = baseDate.minusMonths(i);
-            if (target.getDayOfWeek().getValue() == 6) {
-                target = target.minusDays(1);
-            } else if (target.getDayOfWeek().getValue() == 0) {
-                target = target.plusDays(1);
-            }
+            LocalDate target = lastPrice.getBasDt().minusMonths(i);
 
-            //타켓일자의 값이 없을수 있어 7일전 데이터 까지 불러 최근날짜 데이터를 가지고 옴
+            //타켓일자의 값이 없을 수 있어 7일전 데이터 까지 불러 최근날짜 데이터를 가지고 옴
             PriceMapper bfPrice = stockPriceRepository.findTopByStockCodeAndBasDtBetweenOrderByBasDtDesc(code, target.minusDays(7), target);
 
             if (bfPrice != null) {
-                if (price > bfPrice.getEndPrice()) {
+                if (lastPrice.getEndPrice() > bfPrice.getEndPrice()) {
                     score++;
-                } else if (price < bfPrice.getEndPrice()) {
+                } else if (lastPrice.getEndPrice() < bfPrice.getEndPrice()) {
                     score--;
                 }
             }
