@@ -83,7 +83,6 @@ public class CorpFinance implements Serializable {
 
     @PrePersist
     public void prePersist() {
-        this.revenue = (this.revenue == null ? 0 : this.revenue);
         this.PSR = (this.PSR == null ? 0 : this.PSR);
         this.PBR = (this.PBR == null ? 0 : this.PBR);
         this.PER = (this.PER == null ? 0 : this.PER);

@@ -1,5 +1,6 @@
 package com.quant.core.utils;
 
+import com.quant.core.exception.InvalidRequestException;
 import org.springframework.util.StringUtils;
 
 import java.time.DateTimeException;
@@ -29,7 +30,7 @@ public class DateUtils {
             }
         }
 
-        return LocalDate.now();
+        throw new IllegalArgumentException();
     }
 
     public static String toLocalDatetimeString(LocalDateTime dateTime){

@@ -7,6 +7,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface CorpFinanceRepository extends JpaRepository<CorpFinance, Long> {
 
-    CorpFinance findByCorpCodeAndRceptNoAndYearCode(String corpCode, String rceptNo, String year);
+    CorpFinance findByCorpCodeAndReprtCodeAndYearCode(String corpCode, String reprtCode, String year);
 
 }

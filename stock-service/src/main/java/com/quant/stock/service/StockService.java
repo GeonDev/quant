@@ -35,6 +35,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.util.NumberUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
@@ -321,7 +322,7 @@ public class StockService {
                     if (currentCount < totalCount) {
                         //공공 API에서 이상 감지를 하지 않도록 sleep 추가
                         Thread.sleep(300);
-                        getStockPrice(priceList ,marketType, basDt, pageNum + 1, currentCount + 1);
+                        getStockPrice(priceList, marketType, basDt, pageNum + 1, currentCount + 1);
                     }
                 }
 
@@ -368,7 +369,7 @@ public class StockService {
             factory.setIgnoringElementContentWhitespace(true);
             DocumentBuilder builder = factory.newDocumentBuilder();
 
-            Document document = builder.parse(new File( filePath + "CORPCODE.xml"));
+            Document document = builder.parse(new File(filePath + "CORPCODE.xml"));
             document.getDocumentElement().normalize();
 
             NodeList corpList = document.getElementsByTagName("list");
@@ -377,14 +378,14 @@ public class StockService {
 
             for (int i = 0; i < corpList.getLength(); i++) {
                 Node node = corpList.item(i);
-                if(node.getNodeType() == Node.ELEMENT_NODE){
+                if (node.getNodeType() == Node.ELEMENT_NODE) {
                     Element corp = (Element) node;
 
                     //상장된 회사만 저장
                     if (getValue("stock_code", corp) != null && StringUtils.hasText(getValue("stock_code", corp))) {
 
                         //스팩, 투자회사등 제외
-                        if ( checkInvalidStockName(getValue("corp_name", corp).toLowerCase(Locale.ROOT))) {
+                        if (checkInvalidStockName(getValue("corp_name", corp).toLowerCase(Locale.ROOT))) {
 
                             //가격정보가 있는 데이터 인지 확인
                             if (stockPriceRepository.countByStockCode(getValue("stock_code", corp)) > 0) {
@@ -426,7 +427,8 @@ public class StockService {
             corpInfoRepository.saveAll(unCheckedCorpList);
 
         } catch (Exception e) {
-            Logger.error("{}", e);
+            e.printStackTrace();
+            //Logger.error("{}", e);
         }
 
     }
@@ -438,15 +440,15 @@ public class StockService {
         return node.getNodeValue();
     }
 
-    private boolean checkInvalidStockName(String name){
-        if(name.matches("^*\\d호.*$")){
+    private boolean checkInvalidStockName(String name) {
+        if (name.matches("^*\\d호.*$")) {
             return false;
         }
 
         String[] list = ApplicationConstants.BAN_STOCK_NAME_LIST.split("\\|");
 
-        for(String t: list){
-            if(name.contains(t)){
+        for (String t : list) {
+            if (name.contains(t)) {
                 return false;
             }
         }
@@ -464,7 +466,7 @@ public class StockService {
         }
 
         Long totalCount = corpInfoRepository.countByState(CorpState.ACTIVE);
-        int pageSize = (int) Math.ceil(totalCount / 100.0);
+        long pageSize = (totalCount - 1 / 100) + 1;
 
         for (int i = 0; i < pageSize; i++) {
             //Dart 파라메터의 최대 parm 개수 : 100
@@ -496,6 +498,7 @@ public class StockService {
             return;
         }
 
+        //dart Api 호출시 사용할 파라메터를 만듬
         StringBuffer sb = new StringBuffer();
         for (CorpCodeMapper corpCode : infoList) {
             sb.append(corpCode.getCorpCode());
@@ -536,16 +539,18 @@ public class StockService {
 
                 if (!financeOrigin.isEmpty()) {
                     for (CorpCodeMapper corpCode : infoList) {
+                        // 여러 회사 정보가 섞인 데이터를 회사별로 분류
                         List<FinanceItem> financeItems = setFinanceParser(financeOrigin, corpCode.getCorpCode());
                         if (!financeItems.isEmpty()) {
-                            //재무제표에 한국이 아닌 데이터 삭제
-                            checkChinaStock(financeItems);
+                            //재무제표에 한국이 아닌 데이터는 목록에서 제외
+                            checkNotKoreaStock(financeItems);
 
-                            CorpFinance finance = setFinanceInfo(corpCode.getCorpCode(), year, quarter, financeItems);
-                            if (finance.getRevenue() != null) {
-                                financeList.add(finance);
+                            if (financeItems != null && !financeItems.isEmpty()) {
+                                CorpFinance financeInfo = setFinanceInfo(corpCode.getCorpCode(), year, quarter, financeItems);
+                                if (financeInfo != null) {
+                                    financeList.add(financeInfo);
+                                }
                             }
-
                         }
                     }
                 }
@@ -553,38 +558,11 @@ public class StockService {
                 financeRepository.saveAll(financeList);
             }
         } catch (Exception e) {
-            Logger.error("{}", e);
+            e.printStackTrace();
+            //Logger.error("{}", e);
         }
 
     }
-
-    private void checkChinaStock(List<FinanceItem> financeItems) {
-        for (Iterator<FinanceItem> iter = financeItems.iterator(); iter.hasNext(); ) {
-            FinanceItem item = iter.next();
-            if (item.getCurrency().equals("CNY")) {
-                CorpInfo temp = corpInfoRepository.findTopByCorpCode(item.getCorp_code());
-                temp.setCorpType(CorpType.CHINA);
-                corpInfoRepository.save(temp);
-                iter.remove();
-            } else if (item.getCurrency().equals("JPY")) {
-                CorpInfo temp = corpInfoRepository.findTopByCorpCode(item.getCorp_code());
-                temp.setCorpType(CorpType.JAPAN);
-                corpInfoRepository.save(temp);
-                iter.remove();
-            } else if (item.getCurrency().equals("USD")) {
-                CorpInfo temp = corpInfoRepository.findTopByCorpCode(item.getCorp_code());
-                temp.setCorpType(CorpType.USD);
-                corpInfoRepository.save(temp);
-                iter.remove();
-            } else if (!item.getCurrency().equals("KRW")) {
-                CorpInfo temp = corpInfoRepository.findTopByCorpCode(item.getCorp_code());
-                temp.setCorpType(CorpType.ETC);
-                corpInfoRepository.save(temp);
-                iter.remove();
-            }
-        }
-    }
-
 
     //단일 상장회사 재무 정보 다운로드
     @Async
@@ -636,19 +614,19 @@ public class StockService {
 
             if (response.getStatus().equals("000")) {
                 //같은 기간 데이터가 있는지 확인
-                List<CorpFinance> financeList = new ArrayList<>();
                 List<FinanceItem> financeSrcList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {
                 });
 
-                //재무제표에 한국이 아닌 데이터 삭제
-                checkChinaStock(financeSrcList);
+                //재무제표에 한국이 아닌 데이터는 목록에서 제외
+                checkNotKoreaStock(financeSrcList);
 
-                CorpFinance finance = setFinanceInfo(corpCode, year, quarter, financeSrcList);
-                if (finance.getRevenue() != null) {
-                    financeList.add(finance);
+                if (!financeSrcList.isEmpty() || financeSrcList != null) {
+                    CorpFinance financeInfo = setFinanceInfo(corpCode, year, quarter, financeSrcList);
+                    if (financeInfo != null) {
+                        financeRepository.save(financeInfo);
+                    }
+
                 }
-
-                financeRepository.saveAll(financeList);
             }
 
         } catch (Exception e) {
@@ -656,7 +634,7 @@ public class StockService {
         }
     }
 
-
+    //특정 회사의 재무재표 정보만 추출
     private List<FinanceItem> setFinanceParser(List<FinanceItem> financeOriginList, String corpCode) {
         List<FinanceItem> financeList = new ArrayList<>();
 
@@ -669,9 +647,43 @@ public class StockService {
         return financeList;
     }
 
-    private CorpFinance setFinanceInfo(String corpCode, String year, QuarterCode quarter, List<FinanceItem> financeSrcList) throws RuntimeException {
 
+    private void checkNotKoreaStock(List<FinanceItem> financeItems) {
+        for (Iterator<FinanceItem> iter = financeItems.iterator(); iter.hasNext(); ) {
+            FinanceItem item = iter.next();
+            if (item.getCurrency().equals("CNY")) {
+                CorpInfo temp = corpInfoRepository.findTopByCorpCode(item.getCorp_code());
+                temp.setCorpType(CorpType.CHINA);
+                corpInfoRepository.save(temp);
+                iter.remove();
+            } else if (item.getCurrency().equals("JPY")) {
+                CorpInfo temp = corpInfoRepository.findTopByCorpCode(item.getCorp_code());
+                temp.setCorpType(CorpType.JAPAN);
+                corpInfoRepository.save(temp);
+                iter.remove();
+            } else if (item.getCurrency().equals("USD")) {
+                CorpInfo temp = corpInfoRepository.findTopByCorpCode(item.getCorp_code());
+                temp.setCorpType(CorpType.USD);
+                corpInfoRepository.save(temp);
+                iter.remove();
+            } else if (!item.getCurrency().equals("KRW")) {
+                CorpInfo temp = corpInfoRepository.findTopByCorpCode(item.getCorp_code());
+                temp.setCorpType(CorpType.ETC);
+                corpInfoRepository.save(temp);
+                iter.remove();
+            }
+        }
+    }
+
+
+    private CorpFinance setFinanceInfo(String corpCode, String year, QuarterCode quarter, List<FinanceItem> financeSrcList) {
         CorpFinance finance = new CorpFinance();
+
+        //초기값 세팅
+        finance.setRevenue(0l);
+        finance.setTotalEquity(0l);
+        finance.setNetIncome(0l);
+        finance.setOperatingProfit(0l);
 
         finance.setReprtCode(financeSrcList.get(0).getReprt_code());
         finance.setRceptNo(financeSrcList.get(0).getRcept_no());
@@ -680,46 +692,55 @@ public class StockService {
         finance.setCorpCode(financeSrcList.get(0).getCorp_code());
         finance.setCurrency(financeSrcList.get(0).getCurrency());
 
-        finance.setStartDt(DateUtils.toStringLocalDate(financeSrcList.get(0).getFrmtrm_dt().replace(" 현재", "")));
-        finance.setEndDt(DateUtils.toStringLocalDate(financeSrcList.get(0).getThstrm_dt().replace(" 현재", "")));
+        try {
+            finance.setStartDt(DateUtils.toStringLocalDate(financeSrcList.get(0).getFrmtrm_dt().substring(0, 10)));
+            finance.setEndDt(DateUtils.toStringLocalDate(financeSrcList.get(0).getThstrm_dt().substring(0, 10)));
+        } catch (Exception e) {
+            Logger.info("공시 일자 미표기 : {} {}", quarter.name(), financeSrcList.get(0).getStock_code());
+            return null;
+        }
 
 
-        for (FinanceItem item : financeSrcList) {
-            if (item.getFs_div().equalsIgnoreCase("OFS")) {
-                Long value;
+        try {
+            for (FinanceItem item : financeSrcList) {
+                if (item.getFs_div().equalsIgnoreCase("OFS")) {
 
-                if (StringUtils.hasText(item.getThstrm_amount())) {
-                    //음수 파싱 중 문제가 발생하는 경우가 있어 음수 체크
-                    if (item.getThstrm_amount().startsWith("-")) {
-                        value = Long.parseLong(item.getThstrm_amount().replaceFirst("-", "").replaceAll(",", ""));
-                        value = value * -1L;
-                    } else {
-                        value = Long.parseLong(item.getThstrm_amount().replaceAll(",", ""));
-                    }
+                    if (StringUtils.hasText(item.getThstrm_amount())) {
+                        item.setThstrm_amount(item.getThstrm_amount().replaceAll(",", "").trim());
 
-                    if (item.getSj_div().equalsIgnoreCase("IS")) {
-                        if (item.getAccount_nm().equals("매출액")) {
-                            finance.setRevenue(value);
-                        } else if (item.getAccount_nm().equals("영업이익")) {
-                            finance.setOperatingProfit(value);
-                        } else if (item.getAccount_nm().equals("당기순이익")) {
-                            finance.setNetIncome(value);
+
+                        Long value = Long.parseLong(item.getThstrm_amount());
+
+                        if (item.getSj_div().equalsIgnoreCase("IS")) {
+                            if (item.getAccount_nm().equals("매출액")) {
+                                finance.setRevenue(value);
+                            } else if (item.getAccount_nm().equals("영업이익")) {
+                                finance.setOperatingProfit(value);
+                            } else if (item.getAccount_nm().equals("당기순이익")) {
+                                finance.setNetIncome(value);
+                            }
+                        } else if (item.getSj_div().equalsIgnoreCase("BS")) {
+                            if (item.getAccount_nm().equals("부채총계")) {
+                                finance.setTotalDebt(value);
+                            } else if (item.getAccount_nm().equals("자본금")) {
+                                finance.setCapital(value);
+                            } else if (item.getAccount_nm().equals("이익잉여금")) {
+                                finance.setEarnedSurplus(value);
+                            } else if (item.getAccount_nm().equals("자본총계")) {
+                                finance.setTotalEquity(value);
+                            } else if (item.getAccount_nm().equals("자산총계")) {
+                                finance.setTotalAssets(value);
+                            }
                         }
-                    } else if (item.getSj_div().equalsIgnoreCase("BS")) {
-                        if (item.getAccount_nm().equals("부채총계")) {
-                            finance.setTotalDebt(value);
-                        } else if (item.getAccount_nm().equals("자본금")) {
-                            finance.setCapital(value);
-                        } else if (item.getAccount_nm().equals("이익잉여금")) {
-                            finance.setEarnedSurplus(value);
-                        } else if (item.getAccount_nm().equals("자본총계")) {
-                            finance.setTotalEquity(value);
-                        } else if (item.getAccount_nm().equals("자산총계")) {
-                            finance.setTotalAssets(value);
-                        }
+
                     }
                 }
             }
+
+        } catch (Exception e) {
+            //정상적인 데이터가 아닐 경우 후속처리 없이 종료
+            Logger.info("공시 정보 미표기 : {} {}", quarter.name(),  financeSrcList.get(0).getStock_code());
+            return null;
         }
 
         //YOY, QoQ 계산
@@ -735,7 +756,7 @@ public class StockService {
         PriceMapper nowPrice = stockPriceRepository.findTopByStockCodeAndBasDtBetweenOrderByBasDtDesc(finance.getStockCode(), finance.getEndDt().minusDays(5), finance.getEndDt());
 
         //전년도 재무정보
-        CorpFinance byFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getCode(), String.valueOf(Integer.parseInt(year) - 1));
+        CorpFinance byFinance = financeRepository.findByCorpCodeAndReprtCodeAndYearCode(corpCode, quarter.getCode(), String.valueOf(Integer.parseInt(year) - 1));
 
         if (byFinance != null) {
             Double yoy = ((finance.getRevenue().doubleValue() - byFinance.getRevenue().doubleValue()) / nowPrice.getMarketTotalAmt()) * 100;
@@ -746,16 +767,17 @@ public class StockService {
         CorpFinance bqFinance;
         if (quarter.equals(QuarterCode.Q1)) {
             //전분기 재무정보 (1분기 값은 작년정보)
-            bqFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getBefore(), String.valueOf(Integer.parseInt(year) - 1));
+            bqFinance = financeRepository.findByCorpCodeAndReprtCodeAndYearCode(corpCode, quarter.getBefore(), String.valueOf(Integer.parseInt(year) - 1));
         } else {
             //전분기 재무정보
-            bqFinance = financeRepository.findByCorpCodeAndRceptNoAndYearCode(corpCode, quarter.getBefore(), year);
+            bqFinance = financeRepository.findByCorpCodeAndReprtCodeAndYearCode(corpCode, quarter.getBefore(), year);
         }
         setFinanceGrowth(bqFinance, finance, nowPrice);
     }
 
     private void setFinanceGrowth(CorpFinance bqFinance, CorpFinance finance, PriceMapper nowPrice) {
         if (bqFinance != null && nowPrice != null) {
+
             Double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue()) / nowPrice.getMarketTotalAmt()) * 100;
             finance.setQOQ(qoq);
 
@@ -769,7 +791,7 @@ public class StockService {
 
     public void setFinanceIndicators(CorpFinance finance) {
         //분기 데이터의 마지막일자 시가총액 불러오기
-        PriceMapper nowPrice = stockPriceRepository.findTopByStockCodeAndBasDtBetweenOrderByBasDtDesc(finance.getStockCode(), finance.getEndDt().minusDays(5), finance.getEndDt());
+        PriceMapper nowPrice = stockPriceRepository.findTopByStockCodeAndBasDtBetweenOrderByBasDtDesc(finance.getStockCode(), finance.getEndDt().minusDays(7), finance.getEndDt());
 
         if (nowPrice != null) {
             finance.setPSR(nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue());
