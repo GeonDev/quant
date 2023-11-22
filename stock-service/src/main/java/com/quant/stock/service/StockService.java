@@ -776,16 +776,17 @@ public class StockService {
     }
 
     private void setFinanceGrowth(CorpFinance bqFinance, CorpFinance finance, PriceMapper nowPrice) {
+        // 각 데이터는 모두 퍼센트 수치로 표기
         if (bqFinance != null && nowPrice != null) {
 
             Double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue()) / nowPrice.getMarketTotalAmt()) * 100;
-            finance.setQOQ(qoq);
+            finance.setQOQ(Math.floor(qoq * 100)/100.0);
 
             Double OPGE = ((finance.getOperatingProfit().doubleValue() - bqFinance.getOperatingProfit().doubleValue()) / nowPrice.getMarketTotalAmt()) * 100;
-            finance.setOPGE(OPGE);
+            finance.setOPGE(Math.floor(OPGE * 100)/100.0);
 
             Double PGE = ((finance.getNetIncome().doubleValue() - bqFinance.getNetIncome().doubleValue()) / nowPrice.getMarketTotalAmt()) * 100;
-            finance.setPGE(PGE);
+            finance.setPGE(Math.floor(PGE * 100)/100.0);
         }
     }
 
@@ -793,11 +794,23 @@ public class StockService {
         //분기 데이터의 마지막일자 시가총액 불러오기
         PriceMapper nowPrice = stockPriceRepository.findTopByStockCodeAndBasDtBetweenOrderByBasDtDesc(finance.getStockCode(), finance.getEndDt().minusDays(7), finance.getEndDt());
 
-        if (nowPrice != null) {
-            finance.setPSR(nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue());
-            finance.setPBR(nowPrice.getMarketTotalAmt().doubleValue() / finance.getTotalEquity().doubleValue());
-            finance.setPER(nowPrice.getMarketTotalAmt().doubleValue() / finance.getNetIncome().doubleValue());
-            finance.setPOR(nowPrice.getMarketTotalAmt().doubleValue() / finance.getOperatingProfit().doubleValue());
+        if (nowPrice != null && nowPrice.getMarketTotalAmt() != 0) {
+
+            if(finance.getRevenue() != 0){
+                finance.setPSR(Math.floor((nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue())*100)/100.0);
+            }
+
+            if(finance.getTotalEquity() != 0){
+                finance.setPBR(Math.floor((nowPrice.getMarketTotalAmt().doubleValue() / finance.getTotalEquity().doubleValue())*100)/100.0);
+            }
+
+            if(finance.getNetIncome() != 0){
+                finance.setPER(Math.floor((nowPrice.getMarketTotalAmt().doubleValue() / finance.getNetIncome().doubleValue())*100)/100.0);
+            }
+
+            if(finance.getOperatingProfit() != 0 ){
+                finance.setPOR(Math.floor((nowPrice.getMarketTotalAmt().doubleValue() / finance.getOperatingProfit().doubleValue())*100)/100.0);
+            }
         }
     }
 
