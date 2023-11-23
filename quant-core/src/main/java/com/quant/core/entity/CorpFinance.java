@@ -81,6 +81,38 @@ public class CorpFinance implements Serializable {
     //주가 순이익 성장율
     Double PGE;
 
+    public void setPSR(Double PSR) {
+        this.PSR = Math.floor(PSR*100)/100.0;
+    }
+
+    public void setPBR(Double PBR) {
+        this.PBR = Math.floor(PBR*100)/100.0 ;
+    }
+
+    public void setPER(Double PER) {
+        this.PER = Math.floor(PER*100)/100.0;
+    }
+
+    public void setPOR(Double POR) {
+        this.POR = Math.floor(POR*100)/100.0 ;
+    }
+
+    public void setYOY(Double YOY) {
+        this.YOY = Math.floor(YOY*100)/100.0 ;
+    }
+
+    public void setQOQ(Double QOQ) {
+        this.QOQ = Math.floor(QOQ*100)/100.0 ;
+    }
+
+    public void setOPGE(Double OPGE) {
+        this.OPGE = Math.floor(OPGE*100)/100.0 ;
+    }
+
+    public void setPGE(Double PGE) {
+        this.PGE = Math.floor(PGE*100)/100.0 ;
+    }
+
     @PrePersist
     public void prePersist() {
         this.PSR = (this.PSR == null ? 0 : this.PSR);

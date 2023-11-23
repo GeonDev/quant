@@ -320,8 +320,6 @@ public class StockService {
                     }
 
                     if (currentCount < totalCount) {
-                        //공공 API에서 이상 감지를 하지 않도록 sleep 추가
-                        Thread.sleep(300);
                         getStockPrice(priceList, marketType, basDt, pageNum + 1, currentCount + 1);
                     }
                 }
@@ -545,7 +543,7 @@ public class StockService {
                             //재무제표에 한국이 아닌 데이터는 목록에서 제외
                             checkNotKoreaStock(financeItems);
 
-                            if (financeItems != null && !financeItems.isEmpty()) {
+                            if (!financeItems.isEmpty()) {
                                 CorpFinance financeInfo = setFinanceInfo(corpCode.getCorpCode(), year, quarter, financeItems);
                                 if (financeInfo != null) {
                                     financeList.add(financeInfo);
@@ -620,7 +618,7 @@ public class StockService {
                 //재무제표에 한국이 아닌 데이터는 목록에서 제외
                 checkNotKoreaStock(financeSrcList);
 
-                if (!financeSrcList.isEmpty() || financeSrcList != null) {
+                if (!financeSrcList.isEmpty()) {
                     CorpFinance financeInfo = setFinanceInfo(corpCode, year, quarter, financeSrcList);
                     if (financeInfo != null) {
                         financeRepository.save(financeInfo);
@@ -780,13 +778,13 @@ public class StockService {
         if (bqFinance != null && nowPrice != null) {
 
             Double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue()) / nowPrice.getMarketTotalAmt()) * 100;
-            finance.setQOQ(Math.floor(qoq * 100)/100.0);
+            finance.setQOQ(qoq);
 
             Double OPGE = ((finance.getOperatingProfit().doubleValue() - bqFinance.getOperatingProfit().doubleValue()) / nowPrice.getMarketTotalAmt()) * 100;
-            finance.setOPGE(Math.floor(OPGE * 100)/100.0);
+            finance.setOPGE(OPGE);
 
             Double PGE = ((finance.getNetIncome().doubleValue() - bqFinance.getNetIncome().doubleValue()) / nowPrice.getMarketTotalAmt()) * 100;
-            finance.setPGE(Math.floor(PGE * 100)/100.0);
+            finance.setPGE(PGE);
         }
     }
 
@@ -797,19 +795,19 @@ public class StockService {
         if (nowPrice != null && nowPrice.getMarketTotalAmt() != 0) {
 
             if(finance.getRevenue() != 0){
-                finance.setPSR(Math.floor((nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue())*100)/100.0);
+                finance.setPSR(nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue());
             }
 
             if(finance.getTotalEquity() != 0){
-                finance.setPBR(Math.floor((nowPrice.getMarketTotalAmt().doubleValue() / finance.getTotalEquity().doubleValue())*100)/100.0);
+                finance.setPBR(nowPrice.getMarketTotalAmt().doubleValue() / finance.getTotalEquity().doubleValue());
             }
 
             if(finance.getNetIncome() != 0){
-                finance.setPER(Math.floor((nowPrice.getMarketTotalAmt().doubleValue() / finance.getNetIncome().doubleValue())*100)/100.0);
+                finance.setPER(nowPrice.getMarketTotalAmt().doubleValue() / finance.getNetIncome().doubleValue());
             }
 
             if(finance.getOperatingProfit() != 0 ){
-                finance.setPOR(Math.floor((nowPrice.getMarketTotalAmt().doubleValue() / finance.getOperatingProfit().doubleValue())*100)/100.0);
+                finance.setPOR(nowPrice.getMarketTotalAmt().doubleValue() / finance.getOperatingProfit().doubleValue());
             }
         }
     }
