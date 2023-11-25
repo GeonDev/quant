@@ -9,6 +9,7 @@ import com.quant.core.entity.*;
 import com.quant.core.enums.*;
 import com.quant.core.exception.InvalidRequestException;
 import com.quant.core.repository.mapping.CorpCodeMapper;
+import com.quant.core.repository.mapping.FinanceMapper;
 import com.quant.core.repository.mapping.PriceMapper;
 import com.quant.core.dto.RecommendDto;
 import com.quant.core.repository.*;
@@ -407,6 +408,12 @@ public class StockService {
                                 //모멘텀 세팅
                                 code.setMomentum(getMomentumScore(code.getStockCode()));
 
+                                //흑자 적자 세팅
+                                FinanceMapper financeMapper = financeRepository.findTopByCorpCodeAndOperatingProfitIsNotNull(code.getCorpCode());
+                                if(financeMapper != null && financeMapper.getOperatingProfit() != 0){
+                                    code.setIncome(financeMapper.getOperatingProfit() > 0 ? IncomeState.SURPLUS : IncomeState.DEFLICIT);
+                                }
+
                                 codeList.add(code);
                             }
                         }
@@ -464,7 +471,7 @@ public class StockService {
         }
 
         Long totalCount = corpInfoRepository.countByState(CorpState.ACTIVE);
-        long pageSize = (totalCount - 1 / 100) + 1;
+        long pageSize = ((totalCount - 1)/ 100) + 1;
 
         for (int i = 0; i < pageSize; i++) {
             //Dart 파라메터의 최대 parm 개수 : 100
@@ -756,7 +763,7 @@ public class StockService {
         //전년도 재무정보
         CorpFinance byFinance = financeRepository.findByCorpCodeAndReprtCodeAndYearCode(corpCode, quarter.getCode(), String.valueOf(Integer.parseInt(year) - 1));
 
-        if (byFinance != null) {
+        if (byFinance != null && nowPrice !=null) {
             Double yoy = ((finance.getRevenue().doubleValue() - byFinance.getRevenue().doubleValue()) / nowPrice.getMarketTotalAmt()) * 100;
             finance.setYOY(yoy);
         }

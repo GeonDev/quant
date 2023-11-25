@@ -80,6 +80,7 @@ public class ApiController {
         } else {
             stockService.setMultiCorpFinanceInfo(year);
         }
+
         return ResponseEntity.ok("SET FINANCE");
     }
 

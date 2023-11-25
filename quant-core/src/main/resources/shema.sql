@@ -7,7 +7,6 @@ CREATE SEQUENCE HIBERNATE_SEQUENCE START WITH 1 INCREMENT BY 1;
 CREATE TABLE IF NOT EXISTS TB_CORP_INFO (
   corp_code varchar(11) NOT NULL,
   corp_name text,
-  funding bigint,
   stock_code varchar(11) ,
   income varchar(10) ,
   state varchar(10) DEFAULT 'ACTIVE',
