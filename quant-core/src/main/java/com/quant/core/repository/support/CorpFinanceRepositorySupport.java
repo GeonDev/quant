@@ -33,12 +33,18 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
     //인디케이터의 조건에 맞는 주식 리스트를 추출
     public List<StockDto> findByStockOrderSet(LocalDate date, String market, String indicator, AmtRange range, Integer limit, Integer momentum) {
         return queryFactory.select(Projections
-                .constructor(StockDto.class, corpInfo.corpName, corpFinance.stockCode, stockPrice.endPrice))
-                .from(corpFinance)
-                .join(corpInfo).on(corpFinance.corpCode.eq(corpInfo.corpCode)).leftJoin(stockPrice).on(stockPrice.stockCode.eq(corpFinance.stockCode))
-                .where(stockPrice.basDt.eq(date), rangeSet(date, range), upperZero(indicator) , corpInfo.momentum.goe(momentum) ,marketType(market))
+                        .constructor(StockDto.class, corpInfo.corpName, corpFinance.stockCode, stockPrice.endPrice))
+                .from(corpInfo)
+                .join(corpFinance).on(corpInfo.corpCode.eq(corpFinance.corpCode))
+                .leftJoin(stockPrice).on(stockPrice.stockCode.eq(corpInfo.stockCode))
+                .where(
+                        stockPrice.basDt.eq(date),
+                        rangeSet(date, range),
+                        upperZero(indicator),
+                        corpInfo.momentum.goe(momentum),
+                        marketType(market))
+                .orderBy(setOrderSpecifier(indicator), corpInfo.momentum.desc())
                 .limit(limit)
-                .orderBy(setOrderSpecifier(indicator))
                 .fetch();
     }
 
@@ -128,7 +134,7 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
     }
 
     private BooleanExpression marketType(String market) {
-        if (market.equalsIgnoreCase("KOSPI") ) {
+        if (market.equalsIgnoreCase("KOSPI")) {
             return stockPrice.marketCode.eq("KOSPI");
 
         } else if (market.equalsIgnoreCase("KOSDAQ")) {
