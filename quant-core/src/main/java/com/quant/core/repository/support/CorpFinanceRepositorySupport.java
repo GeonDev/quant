@@ -117,18 +117,16 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
 
     private BooleanExpression rangeSet(LocalDate date, AmtRange range) {
         if (range.equals(AmtRange.LOWER20)) {
-
             List<Integer> price = queryFactory.select(stockPrice.endPrice).from(stockPrice).where(stockPrice.basDt.eq(date)).orderBy(stockPrice.marketTotalAmt.asc()).fetch();
-
-            int per20 = (int) Math.floor(price.size() * 0.2f);
-
-            return stockPrice.endPrice.loe(price.get(per20));
-
+            if(!price.isEmpty()) {
+                int per20 = (int) Math.floor(price.size() * 0.2f);
+                return stockPrice.endPrice.loe(price.get(per20));
+            }
         } else if (range.equals(AmtRange.UPPER200)) {
-
             Integer price = queryFactory.select(stockPrice.endPrice).from(stockPrice).where(stockPrice.basDt.eq(date)).orderBy(stockPrice.marketTotalAmt.desc()).fetch().get(199);
-
-            return stockPrice.endPrice.goe(price);
+            if(price!= null){
+                return stockPrice.endPrice.goe(price);
+            }
         }
         return null;
     }
