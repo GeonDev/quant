@@ -54,9 +54,10 @@ public class ApiController {
         return ResponseEntity.ok("SET PRICE");
     }
 
-    //price 정보가 없을 경우 업데이트 안함
+    //주의! price 정보가 없을 경우 업데이트 안함(모멘텀 체크)
     @PostMapping(value = "code", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity setCorpCode() {
+        // 비동기 실행
         stockService.getDartCorpCodeInfo();
         return ResponseEntity.ok("SET CODE");
     }
