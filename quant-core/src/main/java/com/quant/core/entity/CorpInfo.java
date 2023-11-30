@@ -13,8 +13,8 @@ import java.time.LocalDate;
 @Data
 @Entity
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
+@RequiredArgsConstructor
 @Table(name = "TB_CORP_INFO")
 public class CorpInfo implements Serializable {
 

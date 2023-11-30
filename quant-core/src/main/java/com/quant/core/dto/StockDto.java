@@ -15,5 +15,4 @@ public class StockDto implements Serializable {
     String stockCode;
 
     Integer endPrice;
-    Integer momentum;
 }

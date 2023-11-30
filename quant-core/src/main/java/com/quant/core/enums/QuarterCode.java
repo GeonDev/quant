@@ -12,22 +12,17 @@ public enum QuarterCode {
     Q3("11014"),
     Q4("11011");
 
-    private String code;
+    private final String code;
 
 
     public String getBefore(){
-        switch (this.code){
-            case "11013":
-                return "11011";
-            case "11012":
-                return "11013";
-            case "11014":
-                return "11012";
-            case "11011":
-                return "11014";
-        }
-
-        return "";
+        return switch (this.code) {
+            case "11013" -> "11011";
+            case "11012" -> "11013";
+            case "11014" -> "11012";
+            case "11011" -> "11014";
+            default -> "";
+        };
     }
 
 }

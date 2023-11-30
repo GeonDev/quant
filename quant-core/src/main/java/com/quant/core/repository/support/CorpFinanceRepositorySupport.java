@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+import static com.quant.core.entity.QStockAverage.stockAverage;
 import static com.quant.core.entity.subSelect.QsubFinance.subFinance;
 import static com.quant.core.entity.QCorpInfo.corpInfo;
 import static com.quant.core.entity.QStockPrice.stockPrice;
@@ -34,7 +35,7 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
     //인디케이터의 조건에 맞는 주식 리스트를 추출
     public List<StockDto> findByStockOrderSet(LocalDate date, String market, String indicator, AmtRange range, Integer limit, Integer momentum) {
         return queryFactory.select(Projections
-                        .constructor(StockDto.class, corpInfo.corpName, corpInfo.stockCode, stockPrice.endPrice, corpInfo.momentum))
+                        .constructor(StockDto.class, corpInfo.corpName, corpInfo.stockCode, stockPrice.endPrice))
                 .from(corpInfo)
                 .join(subFinance).on(corpInfo.corpCode.eq(subFinance.corpCode))
                 .leftJoin(stockPrice).on(stockPrice.stockCode.eq(corpInfo.stockCode))

@@ -71,12 +71,16 @@ CREATE INDEX tsp_idx01 ON TB_STOCK_PRICE (stock_code, bas_dt);
 
 
 CREATE TABLE IF NOT EXISTS TB_STOCK_AVERAGE (
+  average_id bigint NOT NULL AUTO_INCREMENT,
   stock_code varchar(11) NOT NULL,
   tar_dt date ,
   price_type varchar(11) ,
   price int ,
-  PRIMARY KEY (stock_code)
+  PRIMARY KEY (average_id)
 );
+
+CREATE INDEX tsa_idx01 ON TB_STOCK_AVERAGE (stock_code, tar_dt);
+
 
 CREATE INDEX tsa_idx01 ON TB_STOCK_AVERAGE (stock_code, tar_dt);
 

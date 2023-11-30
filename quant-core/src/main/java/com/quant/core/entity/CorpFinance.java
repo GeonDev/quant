@@ -1,7 +1,10 @@
 package com.quant.core.entity;
 
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -9,6 +12,9 @@ import java.time.LocalDate;
 
 @Entity
 @Data
+@Builder
+@AllArgsConstructor
+@RequiredArgsConstructor
 @Table(name = "TB_CORP_FINANCE")
 public class CorpFinance implements Serializable {
 

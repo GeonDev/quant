@@ -17,6 +17,9 @@ import java.time.LocalDate;
 public class StockAverage implements Serializable {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    Long averageId;
+
     String stockCode;
 
     //기준일

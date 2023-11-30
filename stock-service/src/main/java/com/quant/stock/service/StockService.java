@@ -167,7 +167,7 @@ public class StockService {
 
         List<StockPrice> priceList = new ArrayList<>();
 
-        while (!endDate.equals(startDate)) {
+        while (!endDate.plusDays(1).equals(startDate)) {
             //while 루프에 영향을 주지 않기 위해 타겟날짜 신규 생성
             LocalDate targetDate = LocalDate.of(startDate.getYear(), startDate.getMonthValue(), startDate.getDayOfMonth());
 
@@ -687,20 +687,20 @@ public class StockService {
 
 
     private CorpFinance setFinanceInfo(String corpCode, String year, QuarterCode quarter, List<FinanceItem> financeSrcList) {
-        CorpFinance finance = new CorpFinance();
-
-        //초기값 세팅
-        finance.setRevenue(0l);
-        finance.setTotalEquity(0l);
-        finance.setNetIncome(0l);
-        finance.setOperatingProfit(0l);
-
-        finance.setReprtCode(financeSrcList.get(0).getReprt_code());
-        finance.setRceptNo(financeSrcList.get(0).getRcept_no());
-        finance.setYearCode(year);
-        finance.setStockCode(financeSrcList.get(0).getStock_code());
-        finance.setCorpCode(financeSrcList.get(0).getCorp_code());
-        finance.setCurrency(financeSrcList.get(0).getCurrency());
+        CorpFinance finance = financeRepository.findByCorpCodeAndReprtCodeAndYearCode(financeSrcList.get(0).getCorp_code(), financeSrcList.get(0).getReprt_code(), year).orElse(
+                CorpFinance.builder()
+                        .rceptNo(financeSrcList.get(0).getRcept_no())
+                        .revenue(0L)
+                        .totalEquity(0L)
+                        .netIncome(0L)
+                        .operatingProfit(0L)
+                        .reprtCode(financeSrcList.get(0).getReprt_code())
+                        .yearCode(year)
+                        .stockCode(financeSrcList.get(0).getStock_code())
+                        .corpCode(financeSrcList.get(0).getCorp_code())
+                        .currency(financeSrcList.get(0).getCurrency())
+                        .build()
+        );
 
         try {
             finance.setStartDt(DateUtils.toStringLocalDate(financeSrcList.get(0).getFrmtrm_dt().substring(0, 10)));
@@ -709,7 +709,6 @@ public class StockService {
             Logger.debug("공시 일자 미표기 : {} {}", quarter.name(), financeSrcList.get(0).getStock_code());
             return null;
         }
-
 
         try {
             for (FinanceItem item : financeSrcList) {
@@ -766,22 +765,15 @@ public class StockService {
         PriceMapper nowPrice = stockPriceRepository.findTopByStockCodeAndBasDtBetweenOrderByBasDtDesc(finance.getStockCode(), finance.getEndDt().minusDays(5), finance.getEndDt());
 
         //전년도 재무정보
-        CorpFinance byFinance = financeRepository.findByCorpCodeAndReprtCodeAndYearCode(corpCode, quarter.getCode(), String.valueOf(Integer.parseInt(year) - 1));
+        CorpFinance byFinance = financeRepository.findByCorpCodeAndReprtCodeAndYearCode(corpCode, quarter.getCode(), String.valueOf(Integer.parseInt(year) - 1)).orElse(null);
 
         if (byFinance != null && nowPrice != null) {
-            Double yoy = ((finance.getRevenue().doubleValue() - byFinance.getRevenue().doubleValue()) / nowPrice.getMarketTotalAmt()) * 100;
-            finance.setYOY(!yoy.isNaN() && !yoy.isInfinite() ? yoy : 0);
+            double yoy = ((finance.getRevenue().doubleValue() - byFinance.getRevenue().doubleValue()) / nowPrice.getMarketTotalAmt()) * 100;
+            finance.setYOY(!Double.isNaN(yoy) && !Double.isInfinite(yoy) ? yoy : 0);
         }
 
         //전분기 재무정보 가지고 오기
-        CorpFinance bqFinance;
-        if (quarter.equals(QuarterCode.Q1)) {
-            //전분기 재무정보 (1분기 값은 작년정보)
-            bqFinance = financeRepository.findByCorpCodeAndReprtCodeAndYearCode(corpCode, quarter.getBefore(), String.valueOf(Integer.parseInt(year) - 1));
-        } else {
-            //전분기 재무정보
-            bqFinance = financeRepository.findByCorpCodeAndReprtCodeAndYearCode(corpCode, quarter.getBefore(), year);
-        }
+        CorpFinance bqFinance = financeRepository.findByCorpCodeAndReprtCodeAndYearCode(corpCode, quarter.getBefore(), quarter.equals(QuarterCode.Q1) ? String.valueOf(Integer.parseInt(year) - 1) : year).orElse(null);
 
         if(bqFinance != null && nowPrice != null){
             setFinanceGrowth(bqFinance, finance, nowPrice.getMarketTotalAmt());
@@ -791,14 +783,14 @@ public class StockService {
     private void setFinanceGrowth(CorpFinance bqFinance, CorpFinance finance, Long marketTotalAmt) {
         // 각 데이터는 모두 퍼센트 수치로 표기
         if (marketTotalAmt != null && marketTotalAmt.intValue() != 0) {
-            Double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue()) / marketTotalAmt) * 100;
-            finance.setQOQ(!qoq.isInfinite() ? qoq : 0);
+            double qoq = ((finance.getRevenue().doubleValue() - bqFinance.getRevenue().doubleValue()) / marketTotalAmt) * 100;
+            finance.setQOQ(!Double.isInfinite(qoq) ? qoq : 0);
 
-            Double opge = ((finance.getOperatingProfit().doubleValue() - bqFinance.getOperatingProfit().doubleValue()) / marketTotalAmt) * 100;
-            finance.setOPGE(!opge.isInfinite() ? opge : 0);
+            double opge = ((finance.getOperatingProfit().doubleValue() - bqFinance.getOperatingProfit().doubleValue()) / marketTotalAmt) * 100;
+            finance.setOPGE(!Double.isInfinite(opge) ? opge : 0);
 
-            Double pge = ((finance.getNetIncome().doubleValue() - bqFinance.getNetIncome().doubleValue()) / marketTotalAmt) * 100;
-            finance.setPGE(!pge.isInfinite() ? pge : 0);
+            double pge = ((finance.getNetIncome().doubleValue() - bqFinance.getNetIncome().doubleValue()) / marketTotalAmt) * 100;
+            finance.setPGE(!Double.isInfinite(pge) ? pge : 0);
         }
     }
 
@@ -807,17 +799,17 @@ public class StockService {
         PriceMapper nowPrice = stockPriceRepository.findTopByStockCodeAndBasDtBetweenOrderByBasDtDesc(finance.getStockCode(), finance.getEndDt().minusDays(7), finance.getEndDt());
 
         if (nowPrice != null && nowPrice.getMarketTotalAmt() != 0) {
-            Double psr = nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue();
-            finance.setPSR(!psr.isInfinite() && !psr.isNaN() ? psr : 0);
+            double psr = nowPrice.getMarketTotalAmt().doubleValue() / finance.getRevenue().doubleValue();
+            finance.setPSR(!Double.isInfinite(psr) && !Double.isNaN(psr) ? psr : 0);
 
-            Double pbr = nowPrice.getMarketTotalAmt().doubleValue() / finance.getTotalEquity().doubleValue();
-            finance.setPBR(!pbr.isInfinite() && !pbr.isNaN() ? pbr : 0);
+            double pbr = nowPrice.getMarketTotalAmt().doubleValue() / finance.getTotalEquity().doubleValue();
+            finance.setPBR(!Double.isInfinite(pbr) && !Double.isNaN(pbr) ? pbr : 0);
 
-            Double per = nowPrice.getMarketTotalAmt().doubleValue() / finance.getNetIncome().doubleValue();
-            finance.setPER(!per.isInfinite() && !per.isNaN() ? per : 0);
+            double per = nowPrice.getMarketTotalAmt().doubleValue() / finance.getNetIncome().doubleValue();
+            finance.setPER(!Double.isInfinite(per) && !Double.isNaN(per) ? per : 0);
 
-            Double por = nowPrice.getMarketTotalAmt().doubleValue() / finance.getOperatingProfit().doubleValue();
-            finance.setPOR(!por.isInfinite() && !per.isNaN() ? por : 0);
+            double por = nowPrice.getMarketTotalAmt().doubleValue() / finance.getOperatingProfit().doubleValue();
+            finance.setPOR(!Double.isInfinite(por) && !Double.isNaN(per) ? por : 0);
         }
     }
 
