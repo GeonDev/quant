@@ -1012,7 +1012,7 @@ public class StockService {
         }
 
         // 내림차순 정렬
-        orderList.sort(Collections.reverseOrder());
+        Collections.sort(orderList);
 
         //가중치 추가를 하면서 개수가 많아졌다면 자르기
         if (orderList.size() > count) {

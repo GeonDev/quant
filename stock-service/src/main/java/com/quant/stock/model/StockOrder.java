@@ -14,8 +14,9 @@ public class StockOrder implements Comparable<StockOrder>{
 
     Integer order;
 
+    //내림 차순 정렬
     @Override
     public int compareTo(StockOrder o) {
-        return o.getOrder() - getOrder();
+        return o.getOrder() - this.getOrder();
     }
 }
