@@ -14,6 +14,7 @@ import com.quant.core.repository.mapping.PriceMapper;
 import com.quant.core.dto.RecommendDto;
 import com.quant.core.repository.*;
 import com.quant.core.repository.support.CorpFinanceRepositorySupport;
+import com.quant.core.repository.support.StockPriceRepositorySupport;
 import com.quant.core.repository.support.TradeRepositorySupport;
 import com.quant.core.utils.CommonUtils;
 import com.quant.core.utils.DateUtils;
@@ -32,7 +33,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -74,6 +74,8 @@ public class StockService {
     private final PortfolioRepository portfolioRepository;
     private final CorpFinanceRepositorySupport financeSupport;
     private final TradeRepositorySupport tradeRepositorySupport;
+
+    private final StockPriceRepositorySupport priceRepositorySupport;
 
     @Value("${signkey.path}")
     String signKey;
@@ -192,7 +194,7 @@ public class StockService {
 
         //벌크 Insert 수행
         stockPriceRepository.saveAll(priceList);
-        Logger.info("[INFO] SET STOCK PRICE : {} ~ {}", startDate, endDate);
+        Logger.info("[INFO] SET STOCK PRICE");
     }
 
 
@@ -822,44 +824,38 @@ public class StockService {
 
     //주식의 가격 평균 배치
     //@Async
+    @Transactional
     public void setStockPriceAverage(LocalDate targetDate) {
         if (targetDate == null) {
             targetDate = LocalDate.now();
         }
 
         List<CorpCodeMapper> targetCorp = corpInfoRepository.findByState(CorpState.ACTIVE);
+        List<StockAverage> averageList = new ArrayList<>();
 
         for (CorpCodeMapper corp : targetCorp) {
-            stockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY5);
-            stockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY20);
-            stockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY60);
-            stockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY120);
-            stockPriceAverage(corp.getStockCode(), targetDate, PriceType.DAY200);
+            stockPriceAverage(averageList, corp.getStockCode(), targetDate, PriceType.DAY5);
+            stockPriceAverage(averageList, corp.getStockCode(), targetDate, PriceType.DAY20);
+            stockPriceAverage(averageList, corp.getStockCode(), targetDate, PriceType.DAY60);
+            stockPriceAverage(averageList, corp.getStockCode(), targetDate, PriceType.DAY120);
+            stockPriceAverage(averageList, corp.getStockCode(), targetDate, PriceType.DAY200);
         }
+
+        stockAverageRepository.saveAll(averageList);
     }
 
-    @Transactional
-    public void stockPriceAverage(String stockCode, LocalDate targetDate, PriceType priceType) {
-        PageRequest pageRequest = PageRequest.of(0, priceType.getValue(), Sort.by("BAS_DT").descending());
-        List<StockPrice> priceList = stockPriceRepository.findByStockCodeAndBasDtBefore(stockCode, targetDate, pageRequest);
 
-        StockAverage average = new StockAverage();
-        average.setStockCode(stockCode);
-        average.setTarDt(targetDate);
-        average.setPriceType(priceType);
-
-        Integer totalPrice = 0;
-        if (priceList.size() == priceType.getValue()) {
-            for (StockPrice price : priceList) {
-                totalPrice += price.getEndPrice();
-            }
-            average.setPrice(totalPrice / priceType.getValue());
-        } else {
-            //기간 개수가 모자르다면 평균을 0으로 처리
-            average.setPrice(0);
-        }
-
-        stockAverageRepository.save(average);
+    public void stockPriceAverage(List<StockAverage> averageList, String stockCode, LocalDate targetDate, PriceType priceType) {
+        StockAverage average = stockAverageRepository.findByStockCodeAndTarDtAndPriceType(stockCode, targetDate, priceType).orElse(
+                StockAverage.builder()
+                        .priceType(priceType)
+                        .tarDt(targetDate)
+                        .stockCode(stockCode)
+                        .price(0)
+                        .build()
+        );
+        average.setPrice(priceRepositorySupport.findByStockAverage(stockCode, targetDate, priceType.getValue()));
+        averageList.add(average);
     }
 
     Integer getMomentumScore(String code) {

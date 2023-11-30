@@ -1,14 +1,18 @@
 package com.quant.core.entity;
 
 import com.quant.core.enums.PriceType;
-import lombok.Data;
+import lombok.*;
 
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDate;
 
 @Entity
-@Data
+@Setter
+@Getter
+@Builder
+@AllArgsConstructor
+@RequiredArgsConstructor
 @Table(name = "TB_STOCK_AVERAGE")
 public class StockAverage implements Serializable {
 
