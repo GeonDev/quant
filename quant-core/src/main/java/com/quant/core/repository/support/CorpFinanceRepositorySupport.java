@@ -45,7 +45,7 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
                         stockPrice.basDt.eq(date),
                         stockPrice.endPrice.goe(stockAverage.price),
                         rangeSet(date, range),
-                        upperZero(indicator),
+                        upperZero(),
                         corpInfo.momentum.goe(momentum),
                         marketType(market),
                         corpInfo.corpType.isNull()
@@ -99,27 +99,15 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
     }
 
     //정렬 대상이 최소 0 이상인 경우만 체크
-    private BooleanExpression upperZero(String key) {
-        switch (key) {
-            case "PSR":
-                return subFinance.PSR.gt(0);
-            case "PBR":
-                return subFinance.PBR.gt(0);
-            case "PER":
-                return subFinance.PER.gt(0);
-            case "POR":
-                return subFinance.POR.gt(0);
-            case "YOY":
-                return subFinance.YOY.gt(0);
-            case "QOQ":
-                return subFinance.QOQ.gt(0);
-            case "OPGE":
-                return subFinance.OPGE.gt(0);
-            case "PGE":
-                return subFinance.PGE.gt(0);
-            default:
-                return subFinance.revenue.gt(0);
-        }
+    private BooleanExpression upperZero() {
+        return subFinance.PSR.gt(0)
+                .and(subFinance.PBR.gt(0) )
+                .and(subFinance.PER.gt(0) )
+                .and(subFinance.POR.gt(0))
+                .and(subFinance.YOY.gt(0))
+                .and(subFinance.QOQ.gt(0))
+                .and(subFinance.OPGE.gt(0))
+                .and(subFinance.revenue.gt(0));
     }
 
     private BooleanExpression rangeSet(LocalDate date, AmtRange range) {
