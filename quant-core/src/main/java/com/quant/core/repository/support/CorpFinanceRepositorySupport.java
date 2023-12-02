@@ -3,6 +3,7 @@ package com.quant.core.repository.support;
 import com.quant.core.dto.StockDto;
 import com.quant.core.entity.CorpFinance;
 import com.quant.core.enums.AmtRange;
+import com.quant.core.enums.PriceType;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
@@ -39,8 +40,10 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
                 .from(corpInfo)
                 .join(subFinance).on(corpInfo.corpCode.eq(subFinance.corpCode))
                 .leftJoin(stockPrice).on(stockPrice.stockCode.eq(corpInfo.stockCode))
+                .leftJoin(stockAverage).on(stockAverage.stockCode.eq(stockPrice.stockCode).and(stockAverage.tarDt.eq(stockPrice.basDt)).and(stockAverage.priceType.eq(PriceType.DAY200)) )
                 .where(
                         stockPrice.basDt.eq(date),
+                        stockPrice.endPrice.goe(stockAverage.price),
                         rangeSet(date, range),
                         upperZero(indicator),
                         corpInfo.momentum.goe(momentum),

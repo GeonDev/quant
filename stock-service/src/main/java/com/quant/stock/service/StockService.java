@@ -407,6 +407,8 @@ public class StockService {
                                     code.setCorpType(CorpType.BANK);
                                 } else if (code.getCorpName().contains("지주") || code.getCorpName().contains("홀딩스")) {
                                     code.setCorpType(CorpType.HOLDING);
+                                }else if(code.getCorpName().contains("리츠")){
+                                    code.setCorpType(CorpType.DIVIDEND);
                                 }
 
                                 //모멘텀 세팅

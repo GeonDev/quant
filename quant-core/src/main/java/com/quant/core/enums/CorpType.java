@@ -7,6 +7,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum CorpType {
     BANK("은행주"),
+    DIVIDEND("배당주"),
     CHINA("중국주식"),
     JAPAN("일본주식"),
     USD("미국주식"),
