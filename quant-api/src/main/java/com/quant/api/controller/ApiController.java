@@ -94,7 +94,7 @@ public class ApiController {
             LocalDate endDate = DateUtils.toStringLocalDate(eDate);
 
             //비동기 호출을 위해서 stockService 외부에서 실행시
-            while (!endDate.equals(endDate)) {
+            while (!endDate.equals(startDate)) {
                 stockService.setStockPriceAverage(startDate);
                 startDate.plusDays(1);
             }
@@ -119,7 +119,7 @@ public class ApiController {
     }
 
 
-    //일회성 추천
+    //일회성 추천 - 구매 내역 저장 안함
     @GetMapping(value = "recommend/ones", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getOneRecommendStock(@RequestParam(value = "date", required = false, defaultValue = "") String date,
                                                @RequestParam(value = "market", required = false, defaultValue = "ALL") String market,

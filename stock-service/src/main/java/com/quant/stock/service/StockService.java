@@ -817,7 +817,7 @@ public class StockService {
 
 
     //주식의 가격 평균 배치
-    //@Async
+    @Async
     @Transactional
     public void setStockPriceAverage(LocalDate targetDate) {
         if (targetDate == null) {
@@ -905,7 +905,6 @@ public class StockService {
         if (orderList.size() > portfolio.getStockCount()) {
             orderList = orderList.subList(0, portfolio.getStockCount() - 1);
         }
-
 
         //현재 가격, 포트폴리오 상 자본금을 고려하여 구매 개수 설정
         List<RecommendDto> result = new ArrayList<>();
@@ -1011,14 +1010,13 @@ public class StockService {
 
         //현재 가격, 포트폴리오 상 자본금을 고려하여 구매 개수 설정
         List<RecommendDto> result = new ArrayList<>();
-        int payForStock = value / count;
         for (StockOrder temp : orderList) {
 
             result.add(RecommendDto.builder()
                     .stockCode(temp.getStock().getStockCode())
                     .corpName(temp.getStock().getCorpName())
                     .price(temp.getStock().getEndPrice())
-                    .count(getBuyStockCount(temp, payForStock, ratioYn, date))
+                    .count(getBuyStockCount(temp, value / count, ratioYn, date))
                     .build());
         }
 

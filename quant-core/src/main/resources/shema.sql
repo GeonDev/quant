@@ -79,10 +79,8 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_AVERAGE (
   PRIMARY KEY (average_id)
 );
 
-CREATE INDEX tsa_idx01 ON TB_STOCK_AVERAGE (stock_code, tar_dt);
+CREATE INDEX tsa_idx01 ON TB_STOCK_AVERAGE (stock_code, tar_dt, price_type);
 
-
-CREATE INDEX tsa_idx01 ON TB_STOCK_AVERAGE (stock_code, tar_dt);
 
 CREATE TABLE IF NOT EXISTS TB_STOCK_TRADE_HISTORY (
   trade_id bigint NOT NULL AUTO_INCREMENT,
