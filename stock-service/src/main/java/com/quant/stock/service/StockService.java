@@ -62,6 +62,8 @@ import static com.quant.core.utils.CommonUtils.getConcatList;
 @RequiredArgsConstructor
 public class StockService {
 
+    ObjectMapper objectMapper;
+
     private final RestTemplate restTemplate;
     private final EmailService emailService;
 
@@ -363,7 +365,7 @@ public class StockService {
 
             File lOutFile = new File(filePath + "temp.zip");
             FileOutputStream lFileOutputStream = new FileOutputStream(lOutFile);
-            lFileOutputStream.write(response.getBody());
+            lFileOutputStream.write(Objects.requireNonNull(response.getBody()));
             lFileOutputStream.close();
 
             CommonUtils.unZip(filePath + "temp.zip", filePath);
@@ -539,14 +541,11 @@ public class StockService {
             ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
 
 
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
-            mapper.enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES);
-            DartBase<FinanceItem> response = mapper.readValue(result.getBody(), DartBase.class);
+            DartBase<FinanceItem> response = objectMapper.readValue(result.getBody(), DartBase.class);
 
             if (response.getStatus().equals("000")) {
                 List<CorpFinance> financeList = new ArrayList<>();
-                List<FinanceItem> financeOrigin = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {
+                List<FinanceItem> financeOrigin = objectMapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {
                 });
 
                 if (!financeOrigin.isEmpty()) {
@@ -618,15 +617,11 @@ public class StockService {
 
             ResponseEntity<String> result = restTemplate.getForEntity(uri.toString(), String.class);
 
-
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
-            mapper.enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES);
-            DartBase<FinanceItem> response = mapper.readValue(result.getBody(), DartBase.class);
+            DartBase<FinanceItem> response = objectMapper.readValue(result.getBody(), DartBase.class);
 
             if (response.getStatus().equals("000")) {
                 //같은 기간 데이터가 있는지 확인
-                List<FinanceItem> financeSrcList = mapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {
+                List<FinanceItem> financeSrcList = objectMapper.convertValue(response.getList(), new TypeReference<List<FinanceItem>>() {
                 });
 
                 //재무제표에 한국이 아닌 데이터는 목록에서 제외
@@ -723,24 +718,18 @@ public class StockService {
                         Long value = Long.parseLong(item.getThstrm_amount());
 
                         if (item.getSj_div().equalsIgnoreCase("IS")) {
-                            if (item.getAccount_nm().equals("매출액")) {
-                                finance.setRevenue(value);
-                            } else if (item.getAccount_nm().equals("영업이익")) {
-                                finance.setOperatingProfit(value);
-                            } else if (item.getAccount_nm().equals("당기순이익")) {
-                                finance.setNetIncome(value);
+                            switch (item.getAccount_nm()) {
+                                case "매출액" -> finance.setRevenue(value);
+                                case "영업이익" -> finance.setOperatingProfit(value);
+                                case "당기순이익" -> finance.setNetIncome(value);
                             }
                         } else if (item.getSj_div().equalsIgnoreCase("BS")) {
-                            if (item.getAccount_nm().equals("부채총계")) {
-                                finance.setTotalDebt(value);
-                            } else if (item.getAccount_nm().equals("자본금")) {
-                                finance.setCapital(value);
-                            } else if (item.getAccount_nm().equals("이익잉여금")) {
-                                finance.setEarnedSurplus(value);
-                            } else if (item.getAccount_nm().equals("자본총계")) {
-                                finance.setTotalEquity(value);
-                            } else if (item.getAccount_nm().equals("자산총계")) {
-                                finance.setTotalAssets(value);
+                            switch (item.getAccount_nm()) {
+                                case "부채총계" -> finance.setTotalDebt(value);
+                                case "자본금" -> finance.setCapital(value);
+                                case "이익잉여금" -> finance.setEarnedSurplus(value);
+                                case "자본총계" -> finance.setTotalEquity(value);
+                                case "자산총계" -> finance.setTotalAssets(value);
                             }
                         }
 
