@@ -825,6 +825,7 @@ public class StockService {
         }
 
         stockAverageRepository.saveAll(averageList);
+        Logger.info("[INFO] SET STOCK PRICE AVERAGE : {} ", targetDate);
     }
 
 
@@ -900,16 +901,20 @@ public class StockService {
         int payForStock = portfolio.getTotalValue().intValue() / portfolio.getStockCount();
         for (StockOrder temp : orderList) {
 
-            RecommendDto recommend = RecommendDto.builder()
-                    .stockCode(temp.getStock().getStockCode())
-                    .corpName(temp.getStock().getCorpName())
-                    .price(temp.getStock().getEndPrice())
-                    .count(getBuyStockCount(temp, payForStock, portfolio.getRatioYn(), date))
-                    .build();
+            int buyCount = getBuyStockCount(temp, payForStock, portfolio.getRatioYn(), date);
 
-            //트레이딩 기록 추가
-            setTradeInfo(portfolio.getUserInfo().getUserKey(), recommend.getStockCode(), recommend.getCount(), TradingType.BUY, recommend.getPrice());
-            result.add(recommend);
+            if(buyCount > 0){
+                RecommendDto recommend = RecommendDto.builder()
+                        .stockCode(temp.getStock().getStockCode())
+                        .corpName(temp.getStock().getCorpName())
+                        .price(temp.getStock().getEndPrice())
+                        .count(buyCount)
+                        .build();
+
+                //트레이딩 기록 추가
+                setTradeInfo(portfolio.getUserInfo().getUserKey(), recommend.getStockCode(), recommend.getCount(), TradingType.BUY, recommend.getPrice());
+                result.add(recommend);
+            }
         }
 
 
@@ -947,9 +952,10 @@ public class StockService {
 
         Long totalPrice = (long) price * count;
 
+        Integer nowCount = tradeRepositorySupport.countByTradeStock(userKey, stockCode);
+
         if (trading.equals(TradingType.SELL)) {
-            Integer nowCount = tradeRepositorySupport.countByTradeStock(userKey, stockCode);
-            if (nowCount < count) {
+            if (nowCount > 0 && nowCount < count) {
                 throw new InvalidRequestException("보유 주식 수 보다 더 많이 매도 할수 없습니다. (보유 수량 : " + nowCount + " 매도 수량 : " + count + " )");
             }
 
@@ -1001,12 +1007,16 @@ public class StockService {
         List<RecommendDto> result = new ArrayList<>();
         for (StockOrder temp : orderList) {
 
-            result.add(RecommendDto.builder()
-                    .stockCode(temp.getStock().getStockCode())
-                    .corpName(temp.getStock().getCorpName())
-                    .price(temp.getStock().getEndPrice())
-                    .count(getBuyStockCount(temp, value / count, ratioYn, date))
-                    .build());
+            int buyCount = getBuyStockCount(temp, value / count, ratioYn, date);
+
+            if(buyCount > 0){
+                result.add(RecommendDto.builder()
+                        .stockCode(temp.getStock().getStockCode())
+                        .corpName(temp.getStock().getCorpName())
+                        .price(temp.getStock().getEndPrice())
+                        .count(buyCount)
+                        .build());
+            }
         }
 
         return result;
