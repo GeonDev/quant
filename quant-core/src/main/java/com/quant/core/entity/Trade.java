@@ -20,9 +20,10 @@ public class Trade {
     Long tradeId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_key")
+    @JoinColumn(name = "portfolio_id")
     @ToString.Exclude
-    UserInfo userInfo;
+    Portfolio portfolio;
+
 
     //주식 코드
     String stockCode;

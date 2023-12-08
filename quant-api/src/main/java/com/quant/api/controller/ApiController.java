@@ -26,9 +26,8 @@ public class ApiController {
 
 
     @PostMapping(value = "user", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity setUser(@RequestParam(value = "email") String email ,
-                                  @RequestParam(value = "funding", required = false, defaultValue = "1000000") Long funding) {
-        stockService.setUserInfo(email ,funding);
+    public ResponseEntity setUser(@RequestParam(value = "email") String email ) {
+        stockService.setUserInfo(email);
 
         return ResponseEntity.ok("User Set");
     }
@@ -110,8 +109,7 @@ public class ApiController {
     //포트폴리오 기반 추천 - 장기 추적용 데이터
     @GetMapping(value = "recommend", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getRecommendStock(@RequestParam(value = "date", required = false, defaultValue = "") String date,
-                                            @RequestParam(value = "portfolio", required = false, defaultValue = "") String portKey,
-                                            @RequestParam(value = "save", required = false, defaultValue = "") Character saveYn) {
+                                            @RequestParam(value = "portfolio", required = false, defaultValue = "") String portKey) {
 
         LocalDate targetDate = DateUtils.toStringLocalDate(date);
 

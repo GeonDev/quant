@@ -19,14 +19,14 @@ public class Portfolio {
     @GenericGenerator(name = "key-generator",
             parameters = @org.hibernate.annotations.Parameter(name = "prefix", value = "PF"),
             strategy = "com.quant.core.config.KeyGenerator")
-    String portfolioId;
+    String portId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_key")
     @ToString.Exclude
     UserInfo userInfo;
 
-    //전체 투자금
+    //포트폴리오 투자금
     Long totalValue;
 
     //최소 모멘텀
@@ -54,6 +54,7 @@ public class Portfolio {
     //현재 가격보다 아래에 있는 이동평균의 개수에 따라 구매 개수 퍼센트 적용
     Character ratioYn;
 
+    //기타 설명 문구
     String comment;
 
 }

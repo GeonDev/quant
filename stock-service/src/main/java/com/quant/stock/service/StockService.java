@@ -1,9 +1,9 @@
 package com.quant.stock.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.core.consts.ApplicationConstants;
+import com.quant.core.dto.HoldStockDto;
 import com.quant.core.dto.StockDto;
 import com.quant.core.entity.*;
 import com.quant.core.enums.*;
@@ -107,7 +107,7 @@ public class StockService {
 
 
     @Transactional
-    public void setUserInfo(String email, Long funding) {
+    public void setUserInfo(String email) {
 
         if (!email.matches("^[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*@[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*.[a-zA-Z]{2,3}$")) {
             throw new InvalidRequestException("이메일 형식이 맞지 않습니다.");
@@ -117,7 +117,6 @@ public class StockService {
 
             UserInfo info = UserInfo.builder()
                     .email(email)
-                    .funding(funding)
                     .build();
             userInfoRepository.save(info);
 
@@ -263,7 +262,7 @@ public class StockService {
     public void getStockPrice(List<StockPrice> priceList, String marketType, String basDt, int pageNum, int currentCount) throws IOException {
 
         try {
-            Logger.debug("주식 가격 세팅 {} {} {}", marketType, basDt, pageNum );
+            Logger.debug("주식 가격 세팅 {} {} {}", marketType, basDt, pageNum);
 
             JSONParser keyParser = new JSONParser();
             Reader reader = new FileReader(signKey);
@@ -409,7 +408,7 @@ public class StockService {
                                     code.setCorpType(CorpType.BANK);
                                 } else if (code.getCorpName().contains("지주") || code.getCorpName().contains("홀딩스")) {
                                     code.setCorpType(CorpType.HOLDING);
-                                }else if(code.getCorpName().contains("리츠")){
+                                } else if (code.getCorpName().contains("리츠")) {
                                     code.setCorpType(CorpType.DIVIDEND);
                                 }
 
@@ -493,7 +492,7 @@ public class StockService {
                 setMultiCorpFinanceInfo(codePage.getContent(), year, QuarterCode.Q4);
             }
         }
-        Logger.info("[INFO] SET STOCK FINANCE : {}" ,year);
+        Logger.info("[INFO] SET STOCK FINANCE : {}", year);
     }
 
     //회사 목록 전체의 재무재표 업데이트
@@ -766,7 +765,7 @@ public class StockService {
         //전분기 재무정보 가지고 오기
         CorpFinance bqFinance = financeRepository.findByCorpCodeAndReprtCodeAndYearCode(corpCode, quarter.getBefore(), quarter.equals(QuarterCode.Q1) ? String.valueOf(Integer.parseInt(year) - 1) : year).orElse(null);
 
-        if(bqFinance != null && nowPrice != null){
+        if (bqFinance != null && nowPrice != null) {
             setFinanceGrowth(bqFinance, finance, nowPrice.getMarketTotalAmt());
         }
     }
@@ -869,10 +868,7 @@ public class StockService {
 
     public List<RecommendDto> getStockRecommend(LocalDate date, String portKey) {
 
-        Portfolio portfolio = portfolioRepository.findByPortfolioId(portKey);
-        if (portfolio == null) {
-            throw new InvalidRequestException("일치하는 포트폴리오 없음");
-        }
+        Portfolio portfolio = portfolioRepository.findByPortId(portKey).orElseThrow(() -> new InvalidRequestException("일치하는 포트 폴리오 없음") );
 
         String[] indicator = portfolio.getIndicator().split(ApplicationConstants.SPLIT_KEY);
 
@@ -897,13 +893,13 @@ public class StockService {
         }
 
         //현재 가격, 포트폴리오 상 자본금을 고려하여 구매 개수 설정
-        List<RecommendDto> result = new ArrayList<>();
+        List<RecommendDto> recommendList = new ArrayList<>();
         int payForStock = portfolio.getTotalValue().intValue() / portfolio.getStockCount();
         for (StockOrder temp : orderList) {
 
             int buyCount = getBuyStockCount(temp, payForStock, portfolio.getRatioYn(), date);
 
-            if(buyCount > 0){
+            if (buyCount > 0) {
                 RecommendDto recommend = RecommendDto.builder()
                         .stockCode(temp.getStock().getStockCode())
                         .corpName(temp.getStock().getCorpName())
@@ -911,15 +907,39 @@ public class StockService {
                         .count(buyCount)
                         .build();
 
-                //트레이딩 기록 추가
-                setTradeInfo(portfolio.getUserInfo().getUserKey(), recommend.getStockCode(), recommend.getCount(), TradingType.BUY, recommend.getPrice());
-                result.add(recommend);
+                //트레이딩 기록 추가 - 매수
+                setTradeInfo(portfolio, recommend.getStockCode(), recommend.getCount(), TradingType.BUY, recommend.getPrice());
+
+                recommendList.add(recommend);
+            }
+        }
+
+        List<HoldStockDto> holdList = tradeRepositorySupport.findByTradeStock(portKey);
+
+        //트레이딩 기록 추가 - 매도(추천리스트에 없는 이전 구매 주식은 모두 매도)
+        for(HoldStockDto holdStock : holdList ){
+            if(!isStillRecommend(holdStock, recommendList)){
+                Integer price = stockPriceRepository.findByStockCodeAndBasDt(holdStock.getStockCode(), date).getEndPrice();
+                setTradeInfo(portfolio, holdStock.getStockCode(), 0, TradingType.SELL, price);
             }
         }
 
 
-        return result;
+        return recommendList;
     }
+
+    //현재 보유중인 주식리스트를 아직도 추천하는지 확인
+    private boolean isStillRecommend(HoldStockDto hold,  List<RecommendDto> recommendList){
+            for(RecommendDto recommend : recommendList ){
+                if(recommend.getStockCode().equals(hold.getStockCode())){
+                    return true;
+                }
+            }
+
+        return false;
+    }
+
+
 
     //주식 구매 개수 계산
     private Integer getBuyStockCount(StockOrder target, int pay, Character ratioYn, LocalDate date) {
@@ -946,38 +966,31 @@ public class StockService {
 
     //주식 로그 추가
     @Transactional
-    public void setTradeInfo(String userKey, String stockCode, Integer count, TradingType trading, Integer price) {
-
-        UserInfo userInfo = userInfoRepository.findByUserKey(userKey).orElseThrow(() -> new InvalidRequestException("일치하는 사용자가 없습니다."));
-
-        Long totalPrice = (long) price * count;
-
-        Integer nowCount = tradeRepositorySupport.countByTradeStock(userKey, stockCode);
+    public void setTradeInfo(Portfolio portfolio, String stockCode, Integer count, TradingType trading, Integer price) {
 
         if (trading.equals(TradingType.SELL)) {
-            if (nowCount > 0 && nowCount < count) {
-                throw new InvalidRequestException("보유 주식 수 보다 더 많이 매도 할수 없습니다. (보유 수량 : " + nowCount + " 매도 수량 : " + count + " )");
-            }
+            Integer nowCount = tradeRepositorySupport.countByTradeStock(portfolio.getPortId(), stockCode);
+            Long totalSellPrice = (long) price * nowCount;
 
-            userInfo.setFunding(userInfo.getFunding() + totalPrice);
+            portfolio.setTotalValue(portfolio.getTotalValue() + totalSellPrice);
 
         } else if (trading.equals(TradingType.BUY)) {
-            if (userInfo.getFunding() - totalPrice < 0) {
-                throw new InvalidRequestException("보유 금액이 부족합니다.");
-            }
-
-            userInfo.setFunding(userInfo.getFunding() - totalPrice);
+            Long totalBuyPrice = (long) price * count;
+            portfolio.setTotalValue(portfolio.getTotalValue() - totalBuyPrice);
         }
 
+        //자산가격 변동 저장
+        portfolioRepository.save(portfolio);
+
+        //거래 내역 저장
         tradeRepository.save(Trade.builder()
                 .tradingDt(LocalDate.now())
+                .portfolio(portfolio)
                 .price(price)
                 .stockCode(stockCode)
                 .stockCount(count)
                 .tradeType(trading)
                 .build());
-
-        userInfoRepository.save(userInfo);
     }
 
 
@@ -1009,7 +1022,7 @@ public class StockService {
 
             int buyCount = getBuyStockCount(temp, value / count, ratioYn, date);
 
-            if(buyCount > 0){
+            if (buyCount > 0) {
                 result.add(RecommendDto.builder()
                         .stockCode(temp.getStock().getStockCode())
                         .corpName(temp.getStock().getCorpName())

@@ -17,6 +17,8 @@ public interface StockPriceRepository extends JpaRepository<StockPrice, Long> {
 
     PriceMapper findTopByStockCodeOrderByBasDtDesc(String code);
 
+    PriceMapper findByStockCodeAndBasDt(String code, LocalDate date);
+
     Integer countByStockCodeAndBasDt(String code, LocalDate date);
 
     Integer countByStockCode(String code);

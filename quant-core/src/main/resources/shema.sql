@@ -84,7 +84,7 @@ CREATE INDEX tsa_idx01 ON TB_STOCK_AVERAGE (stock_code, tar_dt, price_type);
 
 CREATE TABLE IF NOT EXISTS TB_STOCK_TRADE_HISTORY (
   trade_id bigint NOT NULL AUTO_INCREMENT,
-  user_key varchar(12) ,
+  port_id varchar(12) ,
   stock_code varchar(11) ,
   trading_Dt date ,
   price int ,
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_TRADE_HISTORY (
 );
 
 CREATE TABLE IF NOT EXISTS TB_STOCK_PORTFOLIO (
-  portfolio_id varchar(12) NOT NULL,
+  port_id varchar(12) NOT NULL,
   total_value bigint,
   user_key varchar(12) ,
   momentum_score int ,
@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_PORTFOLIO (
   indicator varchar(512),
   rebalance varchar(256),
   comment varchar(512),
-  PRIMARY KEY (portfolio_id)
+  PRIMARY KEY (port_id)
 );
 
 CREATE TABLE IF NOT EXISTS TB_USER_INFO (
