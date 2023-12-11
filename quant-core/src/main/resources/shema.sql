@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_TRADE_HISTORY (
   trading_Dt date ,
   price int ,
   stock_count int ,
+  total_value int ,
   trade_type varchar(11) ,
   PRIMARY KEY (trade_id)
 );

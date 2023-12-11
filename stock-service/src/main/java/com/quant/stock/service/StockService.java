@@ -916,11 +916,15 @@ public class StockService {
 
         List<HoldStockDto> holdList = tradeRepositorySupport.findByTradeStock(portKey);
 
-        //트레이딩 기록 추가 - 매도(추천리스트에 없는 이전 구매 주식은 모두 매도)
+        //트레이딩 기록 추가 - 매도(추천리스트에 없는 이전 구매 주식은 매도)
         for(HoldStockDto holdStock : holdList ){
             if(!isStillRecommend(holdStock, recommendList)){
                 Integer price = stockPriceRepository.findByStockCodeAndBasDt(holdStock.getStockCode(), date).getEndPrice();
-                setTradeInfo(portfolio, holdStock.getStockCode(), 0, TradingType.SELL, price);
+
+                //현재가가 평균가 보다 높으면 매도(손절)
+                if(price > holdStock.getAveragePrice()){
+                    setTradeInfo(portfolio, holdStock.getStockCode(), 0, TradingType.SELL, price);
+                }
             }
         }
 
@@ -989,6 +993,7 @@ public class StockService {
                 .price(price)
                 .stockCode(stockCode)
                 .stockCount(count)
+                .totalValue(count * price)
                 .tradeType(trading)
                 .build());
     }

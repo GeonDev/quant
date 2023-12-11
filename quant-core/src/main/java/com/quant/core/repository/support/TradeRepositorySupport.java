@@ -54,7 +54,7 @@ public class TradeRepositorySupport extends QuerydslRepositorySupport {
     public List<HoldStockDto>  findByTradeStock(String portKey){
 
         List<HoldStockDto> buyStockList = queryFactory
-                .select( Projections.constructor(HoldStockDto.class, trade.stockCode , trade.stockCount.sum()))
+                .select( Projections.constructor(HoldStockDto.class, trade.stockCode , trade.stockCount.sum() ,trade.totalValue.sum().divide(trade.stockCount.sum())))
                 .from(trade)
                 .where(trade.portfolio().portId.eq(portKey), trade.tradeType.eq(TradingType.BUY))
                 .groupBy(trade.stockCode)

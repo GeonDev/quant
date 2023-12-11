@@ -11,6 +11,6 @@ import java.io.Serializable;
 public class HoldStockDto implements Serializable {
 
     String stockCode;
-
     Integer count;
+    Integer averagePrice;
 }

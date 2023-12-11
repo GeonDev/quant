@@ -24,7 +24,6 @@ public class Trade {
     @ToString.Exclude
     Portfolio portfolio;
 
-
     //주식 코드
     String stockCode;
 
@@ -36,6 +35,10 @@ public class Trade {
 
     //주식 개수
     Integer stockCount;
+
+    // 주식 개수 * 거래 금액
+    Integer totalValue;
+
     @Enumerated(EnumType.STRING)
     TradingType tradeType;
     
