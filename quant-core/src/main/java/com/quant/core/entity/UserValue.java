@@ -3,45 +3,47 @@ package com.quant.core.entity;
 import com.quant.core.enums.TradingType;
 import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.Parameter;
 import org.springframework.data.annotation.CreatedDate;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
-@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "TB_STOCK_TRADE_HISTORY")
-public class Trade {
+@Data
+@Table(name = "TB_USER_VALUE_HISTORY")
+public class UserValue implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long tradeId;
+    Long valueId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "portfolio_id")
+    @JoinColumn(name = "user_key")
     @ToString.Exclude
-    Portfolio portfolio;
+    UserInfo userInfo;
 
-    //주식 코드
-    String stockCode;
+    //잔고(예수금 + 평가 금액)
+    Integer balance;
 
-    //거래 갱신일
-    @CreatedDate
-    LocalDate tradingDt;
+    //예수금
+    Integer deposit;
 
-    //거래 금액
-    Integer price;
-
-    //주식 개수
-    Integer stockCount;
-
-    // 주식 개수 * 거래 금액
-    Integer totalValue;
+    //평가 금액
+    Integer marketValue;
 
     @Enumerated(EnumType.STRING)
     TradingType tradeType;
-    
+
+    //변동 사항
+    String comment;
+
+    @CreatedDate
+    LocalDate regDt;
+
 }

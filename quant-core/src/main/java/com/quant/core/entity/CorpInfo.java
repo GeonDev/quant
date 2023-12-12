@@ -4,6 +4,7 @@ import com.quant.core.enums.CorpState;
 import com.quant.core.enums.CorpType;
 import com.quant.core.enums.IncomeState;
 import lombok.*;
+import org.springframework.data.annotation.LastModifiedDate;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -38,6 +39,7 @@ public class CorpInfo implements Serializable {
     String message;
 
     //검사일 -> 상장 폐지인지 확인
+    @LastModifiedDate
     LocalDate checkDt;
 
     //종가 - (n 개월전 종가)의 +/- 값, 7이상일때 상승

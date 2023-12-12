@@ -94,6 +94,9 @@ CREATE TABLE IF NOT EXISTS TB_STOCK_TRADE_HISTORY (
   PRIMARY KEY (trade_id)
 );
 
+CREATE INDEX tsth_idx01 ON TB_STOCK_TRADE_HISTORY (port_id, stock_code, trade_type);
+
+
 CREATE TABLE IF NOT EXISTS TB_STOCK_PORTFOLIO (
   port_id varchar(12) NOT NULL,
   total_value bigint,
@@ -112,4 +115,17 @@ CREATE TABLE IF NOT EXISTS TB_USER_INFO (
     user_key varchar(12) NOT NULL,
     email varchar(30),
     PRIMARY KEY (user_key)
-)
+);
+
+CREATE TABLE IF NOT EXISTS TB_USER_VALUE_HISTORY (
+ value_id bigint NOT NULL AUTO_INCREMENT,
+ user_key varchar(12) ,
+ balance int ,
+ deposit int ,
+ market_value int ,
+ trade_type varchar(11) ,
+ comment varchar(512),
+ reg_Dt date ,
+ PRIMARY KEY (value_id)
+);
+
