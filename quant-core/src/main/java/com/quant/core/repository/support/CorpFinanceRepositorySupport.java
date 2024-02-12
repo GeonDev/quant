@@ -56,46 +56,19 @@ public class CorpFinanceRepositorySupport extends QuerydslRepositorySupport {
     }
 
 
-    // 동적으로 오더 순서 생성
-    private OrderSpecifier[] createOrderSpecifier(List<String> keyList) {
-
-        List<OrderSpecifier> orderSpecifiers = new ArrayList<>();
-
-        for (String key : keyList) {
-
-            if (key.equals("PSR")) {
-                orderSpecifiers.add(new OrderSpecifier(Order.ASC, subFinance.PSR));
-            } else if (key.equals("POR")) {
-                orderSpecifiers.add(new OrderSpecifier(Order.ASC, subFinance.POR));
-            } else if (key.equals("PER")) {
-                orderSpecifiers.add(new OrderSpecifier(Order.ASC, subFinance.PER));
-            }
-        }
-        return orderSpecifiers.toArray(new OrderSpecifier[orderSpecifiers.size()]);
-    }
-
     //지표에 따른 오더 결정
     private OrderSpecifier setOrderSpecifier(String key) {
-        switch (key) {
-            case "PSR":
-                return new OrderSpecifier(Order.ASC, subFinance.PSR);
-            case "PBR":
-                return new OrderSpecifier(Order.ASC, subFinance.PBR);
-            case "PER":
-                return new OrderSpecifier(Order.ASC, subFinance.PER);
-            case "POR":
-                return new OrderSpecifier(Order.ASC, subFinance.POR);
-            case "YOY":
-                return new OrderSpecifier(Order.DESC, subFinance.YOY);
-            case "QOQ":
-                return new OrderSpecifier(Order.DESC, subFinance.QOQ);
-            case "OPGE":
-                return new OrderSpecifier(Order.DESC, subFinance.OPGE);
-            case "PGE":
-                return new OrderSpecifier(Order.DESC, subFinance.PGE);
-            default:
-                return new OrderSpecifier(Order.DESC, subFinance.revenue);
-        }
+        return switch (key) {
+            case "PSR" -> new OrderSpecifier(Order.ASC, subFinance.PSR);
+            case "PBR" -> new OrderSpecifier(Order.ASC, subFinance.PBR);
+            case "PER" -> new OrderSpecifier(Order.ASC, subFinance.PER);
+            case "POR" -> new OrderSpecifier(Order.ASC, subFinance.POR);
+            case "YOY" -> new OrderSpecifier(Order.DESC, subFinance.YOY);
+            case "QOQ" -> new OrderSpecifier(Order.DESC, subFinance.QOQ);
+            case "OPGE" -> new OrderSpecifier(Order.DESC, subFinance.OPGE);
+            case "PGE" -> new OrderSpecifier(Order.DESC, subFinance.PGE);
+            default -> new OrderSpecifier(Order.DESC, subFinance.revenue);
+        };
     }
 
     //정렬 대상이 최소 0 이상인 경우만 체크
