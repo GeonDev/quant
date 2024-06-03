@@ -928,7 +928,6 @@ public class StockService {
             }
         }
 
-
         return recommendList;
     }
 
