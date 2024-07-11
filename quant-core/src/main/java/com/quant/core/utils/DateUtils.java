@@ -1,15 +1,22 @@
 package com.quant.core.utils;
 
-import com.quant.core.exception.InvalidRequestException;
 import org.springframework.util.StringUtils;
 
-import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 public class DateUtils {
+
+    private static final List<DateTimeFormatter> FORMATTERS = Arrays.asList(
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"),
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
+    );
+
 
     public static String getStringNowDateFormat(String pattern) {
         return getStringDateFormat(LocalDateTime.now(),pattern);
@@ -47,6 +54,18 @@ public class DateUtils {
             formatDate = date.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         }
         return formatDate;
+    }
+
+    public static LocalDateTime toStringLocalDateTime(String str) {
+        if (str == null || str.trim().isEmpty()) {
+            return null;
+        }
+
+        for (DateTimeFormatter formatter : FORMATTERS) {
+                return LocalDateTime.parse(str, formatter);
+        }
+
+        throw new IllegalArgumentException();
     }
 
 }
